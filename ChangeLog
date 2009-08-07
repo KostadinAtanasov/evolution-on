@@ -1,3 +1,9 @@
+2009-08-07  Lucian Langa  <lucilanga@gnome.org>
+
+	- use mail-send-receive for tray icon
+	- update evolution.m4 macro
+	- bump version
+
 2008-08-09  Lucian Langa  <lucilanga@gnome.org>
 
 	initial release

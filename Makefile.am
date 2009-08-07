@@ -8,9 +8,15 @@ EXTRA_DIST = \
 	autogen.sh		\
 	intltool-extract.in	\
 	intltool-merge.in	\
-	intltool-update.in
+	intltool-update.in	\
+	po/POTFILES.in		\
+	po/Makefile.in.in	
 
 DISTCLEANFILES = \
   intltool-extract \
   intltool-merge \
-  intltool-update
+  intltool-update \
+  po/POTFILES \
+  po/Makefile.in \
+  po/Makefile \
+  po/stamp-it

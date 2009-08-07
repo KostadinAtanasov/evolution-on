@@ -1,5 +1,5 @@
 /*  Evoution Tray Icon Plugin
- *  Copyright (C) 2008 Lucian Langa <cooly@gnome.eu.org> 
+ *  Copyright (C) 2008-2009 Lucian Langa <cooly@gnome.eu.org> 
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@ struct _EShell {
 typedef struct _EShell EShell;
 
 GtkWidget *evo_window;
-GtkStatusIcon *status_icon = NULL;
+GtkStatusIcon *tray_icon = NULL;
 
 void gtkut_window_popup(GtkWidget *window)
 {
@@ -101,13 +101,13 @@ icon_activated (GtkStatusIcon *icon, gpointer pnotify)
 static void
 create_status_icon(void)
 {
-        if (!status_icon) {
-                status_icon = gtk_status_icon_new ();
-		gtk_status_icon_set_from_pixbuf (status_icon, 
-					e_icon_factory_get_icon ("mail-read", E_ICON_SIZE_LARGE_TOOLBAR));
-                g_signal_connect (G_OBJECT (status_icon), "activate", G_CALLBACK (icon_activated), NULL);
+        if (!tray_icon) {
+                tray_icon = gtk_status_icon_new ();
+		gtk_status_icon_set_from_pixbuf (tray_icon, 
+					e_icon_factory_get_icon ("mail-send-receive", GTK_ICON_SIZE_SMALL_TOOLBAR));
+                g_signal_connect (G_OBJECT (tray_icon), "activate", G_CALLBACK (icon_activated), NULL);
         }
-        gtk_status_icon_set_visible (status_icon, TRUE);
+        gtk_status_icon_set_visible (tray_icon, TRUE);
 }
 
 void org_gnome_evolution_tray_startup(void *ep, EMPopupTargetSelect *t);
