@@ -25,7 +25,9 @@
 
 #include <e-util/e-config.h>
 
+#if EVOLUTION_VERSION < 22900
 #include <mail/em-popup.h>
+#endif
 #include <mail/mail-session.h>
 #include <mail/mail-ops.h>
 #include <e-util/e-error.h>
@@ -43,12 +45,14 @@ struct __EShellPrivate {
 };
 typedef struct __EShellPrivate EShellPrivate;
 
+#if EVOLUTION_VERSION < 22900
 struct _EShell {
         BonoboObject parent;
 
         EShellPrivate *priv;
 };
 typedef struct _EShell EShell;
+#endif
 
 GtkWidget *evo_window;
 GtkStatusIcon *tray_icon = NULL;
@@ -110,9 +114,15 @@ create_status_icon(void)
         gtk_status_icon_set_visible (tray_icon, TRUE);
 }
 
+#if EVOLUTION_VERSION < 22900
 void org_gnome_evolution_tray_startup(void *ep, EMPopupTargetSelect *t);
 
 void org_gnome_evolution_tray_startup(void *ep, EMPopupTargetSelect *t)
+#else
+void org_gnome_evolution_tray_startup(void *ep, ESEventTargetUpgrade *t);
+
+void org_gnome_evolution_tray_startup(void *ep, ESEventTargetUpgrade *t)
+#endif
 {
 	create_status_icon();
 }
