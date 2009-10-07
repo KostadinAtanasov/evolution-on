@@ -21,7 +21,11 @@
                  id="started.done"
                  handle="get_shell"
                  target="shell"/>
-    </hook>
+	</hook>
+    	<hook class="org.gnome.evolution.ui:1.0">
+		<ui-manager id="org.gnome.evolution.mail">
+		</ui-manager>
+	</hook>
 
     </e-plugin>
 </e-plugin-list>

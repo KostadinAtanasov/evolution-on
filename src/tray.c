@@ -27,6 +27,10 @@
 
 #if EVOLUTION_VERSION < 22900
 #include <mail/em-popup.h>
+#else
+#include <shell/e-shell.h>
+#include <shell/e-shell-view.h>
+#include <shell/e-shell-window.h>
 #endif
 #include <mail/mail-session.h>
 #include <mail/mail-ops.h>
@@ -37,6 +41,7 @@
 #include <e-util/e-icon-factory.h>
 #include <shell/es-event.h>
 
+#if EVOLUTION_VERSION < 22900
 struct __EShellPrivate {
         /* IID for registering the object on OAF.  */
         char *iid;
@@ -45,7 +50,6 @@ struct __EShellPrivate {
 };
 typedef struct __EShellPrivate EShellPrivate;
 
-#if EVOLUTION_VERSION < 22900
 struct _EShell {
         BonoboObject parent;
 
@@ -54,7 +58,12 @@ struct _EShell {
 typedef struct _EShell EShell;
 #endif
 
+#if EVOLUTION_VERSION < 22900
 GtkWidget *evo_window;
+#else
+EShellWindow *evo_window;
+#endif
+
 GtkStatusIcon *tray_icon = NULL;
 
 void gtkut_window_popup(GtkWidget *window)
@@ -124,12 +133,26 @@ void org_gnome_evolution_tray_startup(void *ep, ESEventTargetUpgrade *t);
 void org_gnome_evolution_tray_startup(void *ep, ESEventTargetUpgrade *t)
 #endif
 {
+	g_print("Evolution-tray plugin enabled.\n");
 	create_status_icon();
 }
 
 void get_shell(void *ep, ESEventTargetShell *t)
 {
-        EShell *shell = t->shell;
+        EShell *shell;
+#if EVOLUTION_VERSION < 22900
+        shell = t->shell;
         EShellPrivate *priv = (EShellPrivate *)shell->priv;
         evo_window = (GtkWidget *)priv->windows;
+#endif
 }
+
+#if EVOLUTION_VERSION >= 22900
+gboolean
+e_plugin_ui_init (GtkUIManager *ui_manager,
+                  EShellView *shell_view)
+{
+        evo_window = e_shell_view_get_shell_window (shell_view);
+        return TRUE;
+}
+#endif

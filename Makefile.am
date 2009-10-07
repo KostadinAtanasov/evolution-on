@@ -20,3 +20,5 @@ DISTCLEANFILES = \
   po/Makefile.in \
   po/Makefile \
   po/stamp-it
+
+-include $(top_srcdir)/git.mk
