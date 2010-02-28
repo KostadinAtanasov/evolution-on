@@ -2,7 +2,7 @@
 <e-plugin-list>
     <e-plugin
 	type="shlib"
-	id="org.gnome.evolution.plugin.skel"
+	id="org.gnome.evolution.plugin.tray"
 	location="+PLUGIN_INSTALL_DIR+/liborg-gnome-evolution-tray.so"
 	domain="+GETTEXT_PACKAGE+"
 	localedir="+LOCALEDIR+"
