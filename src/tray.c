@@ -93,6 +93,7 @@ static void
 icon_activated (GtkStatusIcon *icon, gpointer pnotify)
 {
 	GList *p, *pnext;
+#if EVOLUTION_VERSION < 22900
 	for (p = (gpointer)evo_window; p != NULL; p = pnext) {
 		pnext = p->next;
 
@@ -105,6 +106,16 @@ icon_activated (GtkStatusIcon *icon, gpointer pnotify)
 			gtk_window_set_skip_taskbar_hint(GTK_WINDOW(p->data), FALSE);
 		}
 	}
+#else
+		if (gtk_window_is_active(evo_window)) {
+			gtk_window_iconify(evo_window);
+			gtk_window_set_skip_taskbar_hint(evo_window, TRUE);
+		} else {
+			gtk_window_iconify(evo_window);
+			gtkut_window_popup(evo_window);
+			gtk_window_set_skip_taskbar_hint(evo_window, FALSE);
+		}
+#endif
 }
 
 static void
