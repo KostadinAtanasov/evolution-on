@@ -4,7 +4,7 @@ INCLUDES =                                              	\
         -DGETTEXT_PACKAGE="\"$(GETTEXT_PACKAGE)\""      	\
         -DLOCALEDIR="\"$(LOCALEDIR)\""                  	\
         -DEVOLUTION_VERSION_STRING=\"$(EVOLUTION_EXEC_VERSION)\"\
-        -DEVOLUTION_VERSION=$(evolution_exec_int)               \
+        -DEVOLUTION_VERSION=$(evolution_version_int)            \
         -DEVOLUTION_GLADEDIR=\""$(gladedir)"\"                  \
         -DEVOLUTION_ICONDIR=\""$(ICON_DIR)"\"                   \
         $(TRAY_EPLUGIN_CFLAGS)
