@@ -10,7 +10,7 @@ EXTRA_DIST = \
 	intltool-merge.in	\
 	intltool-update.in	\
 	po/POTFILES.in		\
-	po/Makefile.in.in	
+	po/Makefile.in.in
 
 DISTCLEANFILES = \
   intltool-extract \
