@@ -32,7 +32,11 @@
 #include <shell/e-shell-view.h>
 #include <shell/e-shell-window.h>
 #endif
+#if EVOLUTION_VERSION >= 29101
+#include <mail/e-mail-session.h>
+#else
 #include <mail/mail-session.h>
+#endif
 #include <mail/mail-ops.h>
 #include <e-util/e-plugin.h>
 #include <glade/glade.h>
