@@ -69,6 +69,22 @@ if test "x$ERROR_DIR" = "x"; then
 fi
 AC_SUBST(ERROR_DIR)
 
+libnotify_minimum_version="0.5.1"
+
+dnl ***************
+dnl Libnotify Flags
+dnl ***************
+LIBNOTIFY_CFLAGS=
+LIBNOTIFY_LIBS=
+PKG_CHECK_MODULES([LIBNOTIFY], [libnotify >= $libnotify_minimum_version], [HAVE_LIBNOTIFY="yes"], [HAVE_LIBNOTIFY="no"])
+if test "x$HAVE_LIBNOTIFY" = "xyes"; then
+	AC_DEFINE(HAVE_LIBNOTIFY, 1, [libnotify available])
+	libnotify="libnotify"
+else
+	libnotify=""
+fi
+AC_SUBST(LIBNOTIFY_CFLAGS)
+AC_SUBST(LIBNOTIFY_LIBS)
 
 dnl ***********
 dnl GConf stuff
