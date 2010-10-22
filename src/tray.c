@@ -55,7 +55,7 @@
 #define GCONF_KEY_NOTIF_ROOT                 "/apps/evolution/eplugin/mail-notification/"
 #define GCONF_KEY_TRAY_ROOT                 "/apps/evolution/eplugin/tray/"
 #define GCONF_KEY_HIDDEN_ON_STARTUP GCONF_KEY_TRAY_ROOT "hidden-on-startup"
-#define GCONF_KEY_STATUS_NOTIFICATION   GCONF_KEY_NOTIF_ROOT "status-notification"
+#define GCONF_KEY_STATUS_NOTIFICATION GCONF_KEY_NOTIF_ROOT "status-notification"
 
 static guint status_count = 0;
 static gboolean winstatus;
@@ -204,7 +204,7 @@ toggle_window (int just_minimize)
 		}
 	}
 #else
-	if (gtk_window_is_active(GTK_WINDOW(evo_window))) {
+	if (just_minimize || gtk_window_is_active(GTK_WINDOW(evo_window))) {
 		gtk_window_iconify(GTK_WINDOW(evo_window));
 		gtk_window_set_skip_taskbar_hint(GTK_WINDOW(evo_window), TRUE);
 		winstatus = TRUE;
@@ -235,10 +235,11 @@ button_press_cb (
 		GdkEventButton *event,
 		gpointer data)
 {
-	if (event->type != GDK_2BUTTON_PRESS && winstatus != TRUE) {
+	if (event->button != 1 || event->type != GDK_2BUTTON_PRESS && winstatus != TRUE) {
 		return FALSE;
 	}
 	toggle_window(FALSE);
+	icon_activated(NULL, NULL);
 	return TRUE;
 }
 
@@ -630,7 +631,7 @@ void get_shell(void *ep, ESEventTargetShell *t)
 	EShellPrivate *priv = (EShellPrivate *)shell->priv;
 	evo_window = (GtkWidget *)priv->windows;
 #endif
-	if(is_part_enabled(GCONF_KEY_HIDDEN_ON_STARTUP)){
+	if (is_part_enabled(GCONF_KEY_HIDDEN_ON_STARTUP)) {
 		toggle_window(TRUE);
 	}
 }
@@ -642,6 +643,9 @@ e_plugin_ui_init (
 	EShellView *shell_view)
 {
 	evo_window = e_shell_view_get_shell_window (shell_view);
+	if (is_part_enabled(GCONF_KEY_HIDDEN_ON_STARTUP)) {
+		toggle_window(TRUE);
+	}
 	return TRUE;
 }
 #endif
