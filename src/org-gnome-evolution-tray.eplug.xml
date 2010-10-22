@@ -1,32 +1,37 @@
 <?xml version="1.0"?>
 <e-plugin-list>
-    <e-plugin
+<e-plugin
 	type="shlib"
 	id="org.gnome.evolution.plugin.tray"
 	location="+PLUGIN_INSTALL_DIR+/liborg-gnome-evolution-tray.so"
 	domain="+GETTEXT_PACKAGE+"
 	localedir="+LOCALEDIR+"
-        _name="Evolution Tray Icon">
-        <_description>Support for controling Evolution from system tray</_description>
+	_name="Evolution Tray Icon">
+	<_description>Support for controling Evolution from system tray</_description>
 	<author name="Lucian Langa" email="lucilanga@gnome.org"/>
 
 	<hook class="org.gnome.evolution.shell.events:1.0">
-         <event
-                 id="upgrade.done"
-                 handle="org_gnome_evolution_tray_startup"
-                 target="upgrade"/>
-    </hook>
-	<hook class="org.gnome.evolution.shell.events:1.0">
-         <event
-                 id="started.done"
-                 handle="get_shell"
-                 target="shell"/>
+		<event
+			id="upgrade.done"
+			handle="org_gnome_evolution_tray_startup"
+			target="upgrade"/>
 	</hook>
-    	<hook class="org.gnome.evolution.ui:1.0">
+	<hook class="org.gnome.evolution.shell.events:1.0">
+		<event
+			id="started.done"
+			handle="get_shell"
+			target="shell"/>
+	</hook>
+	<hook class="org.gnome.evolution.ui:1.0">
 		<ui-manager id="org.gnome.evolution.mail">
 		</ui-manager>
 	</hook>
-
-    </e-plugin>
+	<hook class="org.gnome.evolution.mail.events:1.0">
+		<event id="folder.changed"
+			enable="newmail"
+			handle="org_gnome_evolution_tray_mail_new_notify"
+			target="folder"/>
+	</hook>
+</e-plugin>
 </e-plugin-list>
 
