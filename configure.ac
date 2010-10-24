@@ -1,4 +1,4 @@
-AC_INIT([evolution-tray], [0.0.6])
+AC_INIT([evolution-tray], [0.0.7])
 AC_CONFIG_SRCDIR(src)
 
 AM_INIT_AUTOMAKE
