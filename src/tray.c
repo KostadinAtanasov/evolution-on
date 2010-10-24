@@ -826,7 +826,11 @@ new_notify_status (EMEventTargetFolder *t)
 		EAccount *account;
 		gchar *name = t->name;
 
+#if EVOLUTION_VERSION < 29102
+		account = mail_config_get_account_by_source_url (t->uri);
+#else
 		account = e_get_account_by_source_url (t->uri);
+#endif
 
 		if (account != NULL) {
 			name = g_strdup_printf (
