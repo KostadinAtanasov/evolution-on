@@ -630,7 +630,11 @@ do_quit (GtkMenuItem *item, gpointer user_data)
 {
 	EShell *shell;
 	shell = e_shell_get_default ();
+#if EVOLUTION_VERSION >= 23103
 	e_shell_quit (shell, E_SHELL_QUIT_ACTION);
+#else
+	e_shell_quit (shell);
+#endif
 }
 
 static void
