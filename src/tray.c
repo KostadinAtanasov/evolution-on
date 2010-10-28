@@ -36,6 +36,7 @@
 #if EVOLUTION_VERSION >= 29101
 #include <mail/e-mail-session.h>
 #else
+#include <mail/mail-config.h>
 #include <mail/mail-session.h>
 #endif
 #include <mail/mail-ops.h>
