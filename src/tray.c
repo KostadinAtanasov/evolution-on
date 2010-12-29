@@ -279,10 +279,16 @@ get_config_widget_status (void)
 	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
 	gtk_widget_show (widget);
 
+#if EVOLUTION_VERSION >= 29101
 	g_object_bind_property (
 		master, "active",
 		widget, "sensitive",
 		G_BINDING_SYNC_CREATE);
+#else
+	e_binding_new (
+		master, "active",
+		widget, "sensitive");
+#endif
 
 	container = widget;
 
@@ -347,10 +353,16 @@ get_config_widget_sound (void)
 	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
 	gtk_widget_show (widget);
 
+#if EVOLUTION_VERSION >= 29101
 	g_object_bind_property (
 		master, "active",
 		widget, "sensitive",
 		G_BINDING_SYNC_CREATE);
+#else
+	e_binding_new (
+		master, "active",
+		widget, "sensitive");
+#endif
 
 	container = widget;
 
