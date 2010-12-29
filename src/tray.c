@@ -66,6 +66,8 @@
 static guint status_count = 0;
 static gboolean winstatus;
 
+static gulong shown_first_time_handle = 0;
+
 #ifdef HAVE_LIBNOTIFY
 static NotifyNotification *notify = NULL;
 #endif
@@ -531,35 +533,30 @@ void gtkut_window_popup(GtkWidget *window)
 
 //helper method for toggling used on init for hidden on startup and on tray click
 static void
-toggle_window (int just_minimize)
+toggle_window (void)
 {
 	GList *p, *pnext;
 #if EVOLUTION_VERSION < 22900
 	for (p = (gpointer)evo_window; p != NULL; p = pnext) {
 		pnext = p->next;
 
-		if (just_minimize || gtk_window_is_active(GTK_WINDOW(p->data))) {
-			gtk_window_iconify(GTK_WINDOW(p->data));
-			gtk_window_set_skip_taskbar_hint(GTK_WINDOW(p->data), TRUE);
+		if (gtk_window_is_active(GTK_WINDOW(p->data))) {
+			gtk_widget_hide(GTK_WIDGET(p->data));
 			winstatus = TRUE;
 		} else {
-			gtk_window_iconify(GTK_WINDOW(p->data));
+			gtk_widget_show(GTK_WIDGET(p->data));
 			gtkut_window_popup(GTK_WIDGET(p->data));
-			gtk_window_set_skip_taskbar_hint(GTK_WINDOW(p->data), FALSE);
 			winstatus = FALSE;
 		}
 	}
 #else
-	if (just_minimize || gtk_window_is_active(GTK_WINDOW(evo_window))) {
-		gtk_window_iconify(GTK_WINDOW(evo_window));
-		gtk_window_set_skip_taskbar_hint(GTK_WINDOW(evo_window), TRUE);
+	if (gtk_window_is_active(GTK_WINDOW(evo_window))) {
+		gtk_widget_hide(GTK_WIDGET(evo_window));
 		winstatus = TRUE;
 	} else {
-		gtk_window_iconify(GTK_WINDOW(evo_window));
+		gtk_widget_show(GTK_WIDGET(evo_window));
 		gtkut_window_popup(GTK_WIDGET(evo_window));
-		gtk_window_set_skip_taskbar_hint(GTK_WINDOW(evo_window), FALSE);
 		winstatus = FALSE;
-
 	}
 #endif
 }
@@ -582,10 +579,11 @@ button_press_cb (
 		GdkEventButton *event,
 		gpointer data)
 {
-	if (event->button != 1 || event->type != GDK_2BUTTON_PRESS && winstatus != TRUE) {
+	if (event->button != 1 || event->type != GDK_2BUTTON_PRESS
+		&& winstatus != TRUE) {
 		return FALSE;
 	}
-	toggle_window(FALSE);
+	toggle_window();
 	icon_activated(NULL, NULL);
 	return TRUE;
 }
@@ -707,6 +705,13 @@ remove_notification (void)
 #endif
 
 	status_count = 0;
+}
+
+static void
+shown_first_time_cb (GtkWidget *widget, gpointer user_data)
+{
+	g_signal_handler_disconnect(widget, shown_first_time_handle);
+	gtk_widget_hide(widget);
 }
 
 static void
@@ -977,7 +982,10 @@ void get_shell(void *ep, ESEventTargetShell *t)
 	evo_window = (GtkWidget *)priv->windows;
 #endif
 	if (is_part_enabled(GCONF_KEY_HIDDEN_ON_STARTUP)) {
-		toggle_window(TRUE);
+		shown_first_time_handle =
+			g_signal_connect (G_OBJECT (evo_window),
+				"show",
+				G_CALLBACK (shown_first_time_cb), NULL);
 	}
 }
 
@@ -989,7 +997,10 @@ e_plugin_ui_init (
 {
 	evo_window = e_shell_view_get_shell_window (shell_view);
 	if (is_part_enabled(GCONF_KEY_HIDDEN_ON_STARTUP)) {
-		toggle_window(TRUE);
+		shown_first_time_handle =
+			g_signal_connect (G_OBJECT (evo_window),
+				"show",
+				G_CALLBACK (shown_first_time_cb), NULL);
 	}
 	return TRUE;
 }
