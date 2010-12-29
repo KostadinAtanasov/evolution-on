@@ -65,6 +65,7 @@
 
 static guint status_count = 0;
 static gboolean winstatus;
+static gboolean winnotify = FALSE;
 
 static gulong shown_first_time_handle = 0;
 
@@ -571,6 +572,7 @@ icon_activated (GtkStatusIcon *icon, gpointer pnotify)
 			"mail-read",
 			GTK_ICON_SIZE_SMALL_TOOLBAR));
 	gtk_status_icon_set_has_tooltip (tray_icon, FALSE);
+	winnotify = FALSE;
 }
 
 static gboolean
@@ -580,7 +582,8 @@ button_press_cb (
 		gpointer data)
 {
 	if (event->button != 1 || event->type != GDK_2BUTTON_PRESS
-		&& winstatus != TRUE) {
+		&& winstatus != TRUE && winnotify == TRUE) {
+		gtk_window_present(GTK_WINDOW(evo_window));
 		return FALSE;
 	}
 	toggle_window();
@@ -932,6 +935,7 @@ new_notify_status (EMEventTargetFolder *t)
 		g_free (safetext);
 	}
 #endif
+	winnotify = TRUE;
 
 	g_free (msg);
 }
