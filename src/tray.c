@@ -16,13 +16,21 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gi18n.h>
 #include <string.h>
 
 #include <gconf/gconf-client.h>
+#ifdef HAVE_LIBGCONFBRIDGE
+#include <libgconf-bridge/gconf-bridge.h>
+#else
 #include <e-util/gconf-bridge.h>
+#endif
 
 #include <e-util/e-config.h>
 
@@ -41,7 +49,6 @@
 #endif
 #include <mail/mail-ops.h>
 #include <e-util/e-plugin.h>
-#include <glade/glade.h>
 
 #include <mail/em-event.h>
 #include <mail/em-folder-tree.h>
@@ -285,9 +292,13 @@ get_config_widget_status (void)
 		widget, "sensitive",
 		G_BINDING_SYNC_CREATE);
 #else
+#if EVOLUTION_VERSION >= 22502
 	e_binding_new (
 		master, "active",
 		widget, "sensitive");
+#else
+	g_warning("add missing properties binding for 2.24\n");
+#endif
 #endif
 
 	container = widget;
@@ -359,9 +370,13 @@ get_config_widget_sound (void)
 		widget, "sensitive",
 		G_BINDING_SYNC_CREATE);
 #else
+#if EVOLUTION_VERSION >= 22502
 	e_binding_new (
 		master, "active",
 		widget, "sensitive");
+#else
+	g_warning("add missing properties binding for 2.24\n");
+#endif
 #endif
 
 	container = widget;
@@ -583,7 +598,9 @@ icon_activated (GtkStatusIcon *icon, gpointer pnotify)
 		e_icon_factory_get_icon (
 			"mail-read",
 			GTK_ICON_SIZE_SMALL_TOOLBAR));
+#if GTK_VERSION >= 2016000
 	gtk_status_icon_set_has_tooltip (tray_icon, FALSE);
+#endif
 	winnotify = FALSE;
 }
 
@@ -593,6 +610,7 @@ button_press_cb (
 		GdkEventButton *event,
 		gpointer data)
 {
+		g_print("present\n");
 	if (event->button != 1 || event->type != GDK_2BUTTON_PRESS
 		&& winstatus != TRUE && winnotify == TRUE) {
 		gtk_window_present(GTK_WINDOW(evo_window));
@@ -613,17 +631,19 @@ create_status_icon(void)
 			e_icon_factory_get_icon (
 				"mail-read",
 				GTK_ICON_SIZE_SMALL_TOOLBAR));
+		g_print("con1\n");
 		g_signal_connect (
 			G_OBJECT (tray_icon),
 			"activate",
 			G_CALLBACK (icon_activated),
 			NULL);
+		g_print("con2\n");
 		g_signal_connect (
 			G_OBJECT (tray_icon),
 			"button-press-event",
 			G_CALLBACK (button_press_cb),
 			NULL);
-
+		g_print("con3\n");
 		g_signal_connect (
 			tray_icon, "popup-menu",
 			G_CALLBACK (popup_menu_status), NULL);
@@ -642,12 +662,16 @@ notification_callback (gpointer notify)
 static void
 do_quit (GtkMenuItem *item, gpointer user_data)
 {
+#if EVOLUTION_VERSION < 22900
+	bonobo_main_quit();
+#else
 	EShell *shell;
 	shell = e_shell_get_default ();
 #if EVOLUTION_VERSION >= 23103
 	e_shell_quit (shell, E_SHELL_QUIT_ACTION);
 #else
 	e_shell_quit (shell);
+#endif
 #endif
 }
 
@@ -695,7 +719,13 @@ do_properties (GtkMenuItem *item, gpointer user_data)
 		GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE,
 		NULL);
 
+#if GTK_VERSION >= 2014000
 	content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+#else
+        content_area = GTK_DIALOG (dialog)->vbox;
+#endif
+
+
 
 #if !GTK_CHECK_VERSION(2,90,7)
 	g_object_set (dialog, "has-separator", FALSE, NULL);
@@ -732,6 +762,7 @@ shown_first_time_cb (GtkWidget *widget, gpointer user_data)
 static void
 status_icon_activate_cb (void)
 {
+#if EVOLUTION_VERSION >= 22900
 	EShell *shell;
 	EShellView *shell_view;
 	EShellWindow *shell_window;
@@ -763,6 +794,7 @@ status_icon_activate_cb (void)
 	shell_sidebar = e_shell_view_get_shell_sidebar (shell_view);
 	g_object_get (shell_sidebar, "folder-tree", &folder_tree, NULL);
 	em_folder_tree_set_selected (folder_tree, uri, FALSE);
+#endif
 
 	remove_notification ();
 }
@@ -875,6 +907,7 @@ new_notify_status (EMEventTargetFolder *t)
 		if (name != t->name)
 			g_free (name);
 
+#if EVOLUTION_VERSION >= 22902
 		if (t->msg_sender) {
 			gchar *tmp, *str;
 
@@ -899,6 +932,7 @@ new_notify_status (EMEventTargetFolder *t)
 			g_free (str);
 			msg = tmp;
 		}
+#endif
 	} else {
 		status_count += t->new;
 		msg = g_strdup_printf (ngettext (
@@ -907,7 +941,9 @@ new_notify_status (EMEventTargetFolder *t)
 			status_count), status_count);
 	}
 
+#if GTK_VERSION >= 2016000
 	gtk_status_icon_set_tooltip_text (tray_icon, msg);
+#endif
 	gtk_status_icon_set_from_pixbuf (
 		tray_icon,
 		e_icon_factory_get_icon (
@@ -981,10 +1017,18 @@ org_gnome_evolution_tray_startup(
 	create_status_icon();
 }
 
+#if EVOLUTION_VERSION < 22900
+void org_gnome_evolution_tray_mail_new_notify (void *ep, EMEventTargetFolder *t);
+#else
 void org_gnome_evolution_tray_mail_new_notify (EPlugin *ep, EMEventTargetFolder *t);
+#endif
 
 void
+#if EVOLUTION_VERSION < 22900
+org_gnome_evolution_tray_mail_new_notify (void *ep, EMEventTargetFolder *t)
+#else
 org_gnome_evolution_tray_mail_new_notify (EPlugin *ep, EMEventTargetFolder *t)
+#endif
 {
 	new_notify_status (t);
 }
