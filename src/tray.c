@@ -610,7 +610,6 @@ button_press_cb (
 		GdkEventButton *event,
 		gpointer data)
 {
-		g_print("present\n");
 	if (event->button != 1 || event->type != GDK_2BUTTON_PRESS
 		&& winstatus != TRUE && winnotify == TRUE) {
 		gtk_window_present(GTK_WINDOW(evo_window));
@@ -631,19 +630,16 @@ create_status_icon(void)
 			e_icon_factory_get_icon (
 				"mail-read",
 				GTK_ICON_SIZE_SMALL_TOOLBAR));
-		g_print("con1\n");
 		g_signal_connect (
 			G_OBJECT (tray_icon),
 			"activate",
 			G_CALLBACK (icon_activated),
 			NULL);
-		g_print("con2\n");
 		g_signal_connect (
 			G_OBJECT (tray_icon),
 			"button-press-event",
 			G_CALLBACK (button_press_cb),
 			NULL);
-		g_print("con3\n");
 		g_signal_connect (
 			tray_icon, "popup-menu",
 			G_CALLBACK (popup_menu_status), NULL);
