@@ -95,6 +95,9 @@ else
 fi
 AC_SUBST(LIBNOTIFY_CFLAGS)
 AC_SUBST(LIBNOTIFY_LIBS)
+LIBNOTIFY_S_VERSION=`$PKG_CONFIG --modversion libnotify`
+LIBNOTIFY_VERSION=`echo $LIBNOTIFY_S_VERSION|$AWK -F . '{print $1 * 1000000 + $2 * 1000 + $3}'`
+AC_SUBST(LIBNOTIFY_VERSION)
 
 dnl ***********
 dnl GConf stuff

@@ -7,6 +7,7 @@ INCLUDES =                                              	\
 	-DEVOLUTION_VERSION=$(evolution_version_int)            \
 	-DEVOLUTION_GLADEDIR=\""$(gladedir)"\"                  \
 	-DEVOLUTION_ICONDIR=\""$(ICON_DIR)"\"                   \
+	-DLIBNOTIFY_VERSION=$(LIBNOTIFY_VERSION)		\
 	$(TRAY_EPLUGIN_CFLAGS)					\
 	$(GTKHTML_EDITOR_CFLAGS)
 
@@ -29,7 +30,7 @@ plugin_DATA = 					\
 plugin_LTLIBRARIES = liborg-gnome-evolution-tray.la
 
 liborg_gnome_evolution_tray_la_SOURCES = tray.c
-liborg_gnome_evolution_tray_la_LIBADD = $(LIBGCONFBRIDGE_LIBS)
+liborg_gnome_evolution_tray_la_LIBADD = $(LIBGCONFBRIDGE_LIBS) $(LIBNOTIFY_LIBS)
 liborg_gnome_evolution_tray_la_LDFLAGS = -module -avoid-version -rpath $(PLUGIN_INSTALL_DIR)
 
 EXTRA_DIST = 	org-gnome-evolution-tray.eplug.xml	\

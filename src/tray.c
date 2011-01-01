@@ -962,9 +962,15 @@ new_notify_status (EMEventTargetFolder *t)
 
 			notify  = notify_notification_new (
 				_("New email"), safetext,
+#if LIBNOTIFY_VERSION < 7000
 				"mail-unread", NULL);
+#else
+				"mail-unread");
+#endif
+#if LIBNOTIFY_VERSION < 7000
 			notify_notification_attach_to_status_icon (
 				notify, tray_icon);
+#endif
 
 			/* Check if actions are supported */
 			if (can_support_actions ()) {
