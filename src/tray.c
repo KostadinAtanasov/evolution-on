@@ -538,16 +538,29 @@ void gtkut_window_popup(GtkWidget *window)
 	gint x, y, sx, sy, new_x, new_y;
 
 	g_return_if_fail(window != NULL);
+#if GTK_CHECK_VERSION (2,14,0)
+	g_return_if_fail(gtk_widget_get_window(window) != NULL);
+#else
 	g_return_if_fail(window->window != NULL);
+#endif
 
 	sx = gdk_screen_width();
 	sy = gdk_screen_height();
 
+#if GTK_CHECK_VERSION (2,14,0)
+	gdk_window_get_origin(gtk_widget_get_window(window), &x, &y);
+#else
 	gdk_window_get_origin(window->window, &x, &y);
+#endif
 	new_x = x % sx; if (new_x < 0) new_x = 0;
 	new_y = y % sy; if (new_y < 0) new_y = 0;
-	if (new_x != x || new_y != y)
+	if (new_x != x || new_y != y) {
+#if GTK_CHECK_VERSION (2,14,0)
+		gdk_window_move(gtk_widget_get_window(window), new_x, new_y);
+#else
 		gdk_window_move(window->window, new_x, new_y);
+#endif
+	}
 
 	gtk_window_set_skip_taskbar_hint(
 		GTK_WINDOW(window),
@@ -555,7 +568,11 @@ void gtkut_window_popup(GtkWidget *window)
 	gtk_window_present(GTK_WINDOW(window));
 #ifdef G_OS_WIN32
 	/* ensure that the window is displayed at the top */
+#if GTK_CHECK_VERSION (2,14,0)
+	gdk_window_show(gtk_widget_get_window(window));
+#else
 	gdk_window_show(window->window);
+#endif
 #endif
 }
 
@@ -715,10 +732,10 @@ do_properties (GtkMenuItem *item, gpointer user_data)
 		GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE,
 		NULL);
 
-#if GTK_VERSION >= 2014000
-	content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+#if GTK_CHECK_VERSION (2,14,0)
+	content_area = gtk_dialog_get_content_area(GTK_DIALOG (dialog));
 #else
-        content_area = GTK_DIALOG (dialog)->vbox;
+	content_area = GTK_DIALOG (dialog)->vbox;
 #endif
 
 

@@ -24,11 +24,16 @@ AC_PROG_AWK
 
 AC_MSG_CHECKING(Evolution version)
 dnl is this a reasonable thing to do ?
-EVOLUTION_VERSION=`$PKG_CONFIG --modversion evolution-shell 2>/dev/null`
+EVOLUTION_VERSION=`$PKG_CONFIG --modversion evolution-shell-3.0 2>/dev/null`
+if test -n "$EVOLUTION_VERSION"; then
+        EVOLUTION_BASE_VERSION_S="-3.0"
+else
+	EVOLUTION_VERSION=`$PKG_CONFIG --modversion evolution-shell 2>/dev/null`
+	EVOLUTION_BASE_VERSION_S=""
+fi
 if test -n "$EVOLUTION_VERSION"; then
         EVOLUTION_BASE_VERSION=$EVOLUTION_VERSION
-        EVOLUTION_BASE_VERSION_S=""
-        EVOLUTION_EXEC_VERSION=`$PKG_CONFIG --variable=execversion evolution-shell 2>/dev/null`
+        EVOLUTION_EXEC_VERSION=`$PKG_CONFIG --variable=execversion evolution-shell$EVOLUTION_BASE_VERSION_S 2>/dev/null`
         if test -n "$EVOLUTION_EXEC_VERSION"; then
                 break;
         else
@@ -65,10 +70,6 @@ AC_MSG_RESULT($EVOLUTION_VERSION)
 AC_SUBST(EVOLUTION_EXEC_VERSION)
 
 evolution_version_int="$(echo "$EVOLUTION_VERSION" | $AWK -F . '{print [$]1 * 10000 + [$]2 * 100 + [$]3}')"
-if test "$evolution_version_int" -ge "21100"; then
-        AC_DEFINE_UNQUOTED(EVOLUTION_2_12,1, [evolution mail 2.12 present])
-        AC_SUBST(EVOLUTION_2_12)
-fi
 AC_SUBST(evolution_version_int)
 
 MINOR_VERSION="$(echo $EVOLUTION_VERSION|cut -d. -f2|$AWK -F . '{print 1000 * [$]1}')"
