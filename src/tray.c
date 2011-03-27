@@ -659,7 +659,7 @@ create_status_icon(void)
 			NULL);
 		g_signal_connect (
 			tray_icon, "popup-menu",
-			G_CALLBACK (popup_menu_status), NULL);
+			G_CALLBACK (popup_menu_status), tray_icon);
 	}
 	gtk_status_icon_set_visible (tray_icon, TRUE);
 }
@@ -854,6 +854,7 @@ popup_menu_status (GtkStatusIcon *status_icon,
 {
 	GtkMenu *menu;
 	GtkWidget *item;
+	g_print("popup\n");
 
 	menu = GTK_MENU (gtk_menu_new ());
 
@@ -878,7 +879,8 @@ popup_menu_status (GtkStatusIcon *status_icon,
 		G_CALLBACK (do_quit), NULL);
 
 	g_object_ref_sink (menu);
-	gtk_menu_popup (menu, NULL, NULL, NULL, NULL, button, activate_time);
+	gtk_menu_popup (GTK_MENU (menu), NULL, NULL,
+		gtk_status_icon_position_menu, user_data, button, activate_time);
 	g_object_unref (menu);
 }
 
