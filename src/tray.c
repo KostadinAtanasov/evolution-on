@@ -889,26 +889,60 @@ new_notify_status (EMEventTargetFolder *t)
 {
 	gchar *msg;
 	gboolean new_icon = !tray_icon;
+#if EVOLUTION_VERSION >= 30102
+	gchar *uri;
+
+	uri = e_mail_folder_uri_build (t->store, t->folder_name);
+#endif
 
 	g_object_set_data_full (
 		G_OBJECT (tray_icon), "uri",
-		g_strdup (t->uri), (GDestroyNotify) g_free);
+#if EVOLUTION_VERSION >= 30102
+		uri,
+#else
+		g_strdup (t->uri),
+#endif
+		(GDestroyNotify) g_free);
 
 	if (!status_count) {
 		EAccount *account;
+		gchar *folder_name;
+#if EVOLUTION_VERSION >= 30102
+		const gchar *uid;
+		gchar *name = t->display_name;
+#else
 		gchar *name = t->name;
+#endif
 
+#if EVOLUTION_VERSION >= 30102
+		uid = camel_service_get_uid (CAMEL_SERVICE (t->store));
+		account = e_get_account_by_uid (uid);
+#else
+#if EVOLUTION_VERSION == 30101
+		account = t->account;
+#else
 #if EVOLUTION_VERSION < 29102
 		account = mail_config_get_account_by_source_url (t->uri);
 #else
 		account = e_get_account_by_source_url (t->uri);
 #endif
+#endif
+#endif
 
-		if (account != NULL) {
-			name = g_strdup_printf (
-				"%s/%s", e_account_get_string (
-				account, E_ACCOUNT_NAME), name);
-		}
+#if EVOLUTION_VERSION >= 30102
+		if (account != NULL)
+			folder_name = g_strdup_printf (
+				"%s/%s", account->name, t->folder_name);
+		else
+			folder_name = g_strdup (t->folder_name);
+#else
+		if (account != NULL)
+			folder_name = g_strdup_printf (
+				"%s/%s", e_account_get_strinf (account, E_ACCOUNT_NAME),
+				name;
+		else
+			folder_name = g_strdup (t->name);
+#endif
 
 		status_count = t->new;
 
@@ -917,10 +951,9 @@ new_notify_status (EMEventTargetFolder *t)
 		msg = g_strdup_printf (ngettext (
 			"You have received %d new message\nin %s.",
 			"You have received %d new messages\nin %s.",
-			status_count), status_count, name);
+			status_count), status_count, folder_name);
 
-		if (name != t->name)
-			g_free (name);
+		g_free(folder_name);
 
 #if EVOLUTION_VERSION >= 22902
 		if (t->msg_sender) {
@@ -1054,6 +1087,7 @@ org_gnome_evolution_tray_mail_new_notify (EPlugin *ep, EMEventTargetFolder *t)
 	new_notify_status (t);
 }
 
+#if EVOLUTION_VERSION < 30101
 void get_shell(void *ep, ESEventTargetShell *t)
 {
 	EShell *shell;
@@ -1069,6 +1103,7 @@ void get_shell(void *ep, ESEventTargetShell *t)
 				G_CALLBACK (shown_first_time_cb), NULL);
 	}
 }
+#endif
 
 #if EVOLUTION_VERSION >= 22900
 gboolean

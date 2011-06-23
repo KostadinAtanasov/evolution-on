@@ -40,16 +40,9 @@ AC_SUBST(LIBGCONFBRIDGE_CFLAGS)
 AC_SUBST(LIBGCONFBRIDGE_LIBS)
 
 PKG_CHECK_MODULES(TRAY_EPLUGIN,
-  [gtk+-2.0 >= $LIBGTK_REQUIRED dnl
+  [gtk+-3.0 >= $LIBGTK_REQUIRED dnl
    evolution-plugin$EVOLUTION_BASE_VERSION_S >= $EVOLUTION_REQUIRED dnl
 ])
-
-PKG_CHECK_MODULES([GTKHTML_EDITOR], gtkhtml-editor, [GTKHTMLEDITOR=yes], [GTKHTMLEDITOR=no])
-if test "x$GTKHTMLEDITOR" == "xno"; then
-PKG_CHECK_MODULES([GTKHTML_EDITOR], gtkhtml-editor$GTKHTML, [GTKHTMLEDITOR=yes], [GTKHTMLEDITOR=no])
-fi
-AC_SUBST(GTKHTML_EDITOR_CFLAGS)
-AC_SUBST(GTKHTML_EDITOR_LIBS)
 
 dnl Evolution plugin install directory
 AC_ARG_WITH(plugin-install-dir, [  --with-plugin-install-dir=PATH path to evolution plugin directory])
