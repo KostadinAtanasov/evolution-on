@@ -939,7 +939,7 @@ new_notify_status (EMEventTargetFolder *t)
 		if (account != NULL)
 			folder_name = g_strdup_printf (
 				"%s/%s", e_account_get_strinf (account, E_ACCOUNT_NAME),
-				name;
+				name);
 		else
 			folder_name = g_strdup (t->name);
 #endif
