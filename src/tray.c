@@ -42,7 +42,8 @@
 #include <shell/e-shell-window.h>
 #endif
 #if EVOLUTION_VERSION >= 29101
-#include <mail/e-mail-session.h>
+#include <e-util/e-account-utils.h>
+#include <mail/e-mail.h>
 #else
 #include <mail/mail-config.h>
 #include <mail/mail-session.h>
