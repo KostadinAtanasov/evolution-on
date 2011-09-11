@@ -1,4 +1,4 @@
-AC_INIT([evolution-tray], [0.0.8], [http://bugzilla.gnome.eu.org/enter_bug.cgi?product=evolution-tray])
+AC_INIT([evolution-tray], [0.0.9], [http://bugzilla.gnome.eu.org/enter_bug.cgi?product=evolution-tray])
 AC_CONFIG_SRCDIR(src)
 
 AM_INIT_AUTOMAKE
