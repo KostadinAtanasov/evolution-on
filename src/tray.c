@@ -785,9 +785,17 @@ status_icon_activate_cb (void)
 	GtkAction *action;
 	GList *list;
 	const gchar *uri;
+#if (EVOLUTION_VERSION >= 30101)
+	GtkApplication *application;
+#endif
 
 	shell = e_shell_get_default ();
+#if (EVOLUTION_VERSION >= 30301)
+	application = GTK_APPLICATION(shell);
+	list = gtk_application_get_windows (application);
+#else
 	list = e_shell_get_watched_windows (shell);
+#endif
 
 	/* Find the first EShellWindow in the list. */
 	while (list != NULL && !E_IS_SHELL_WINDOW (list->data))
