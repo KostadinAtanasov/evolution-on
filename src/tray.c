@@ -65,6 +65,7 @@
 #define GCONF_KEY_NOTIF_ROOT                 "/apps/evolution/eplugin/mail-notification/"
 #define GCONF_KEY_TRAY_ROOT                 "/apps/evolution/eplugin/tray/"
 #define GCONF_KEY_HIDDEN_ON_STARTUP GCONF_KEY_TRAY_ROOT "hidden-on-startup"
+#define GCONF_KEY_HIDE_ON_MINIMIZE GCONF_KEY_TRAY_ROOT "hide-on-minimize"
 #define GCONF_KEY_STATUS_NOTIFICATION GCONF_KEY_NOTIF_ROOT "status-notification"
 #define GCONF_KEY_NOTIFY_ONLY_INBOX     GCONF_KEY_NOTIF_ROOT "notify-only-inbox"
 #define GCONF_KEY_ENABLED_DBUS          GCONF_KEY_NOTIF_ROOT "dbus-enabled"
@@ -153,6 +154,13 @@ toggled_hidden_on_startup_cb (GtkWidget *widget, gpointer data)
 {
 	g_return_if_fail (widget != NULL);
 	set_part_enabled (GCONF_KEY_HIDDEN_ON_STARTUP, gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget)));
+}
+
+static void
+toggled_hidde_on_minimize_cb (GtkWidget *widget, gpointer data)
+{
+	g_return_if_fail (widget != NULL);
+	set_part_enabled (GCONF_KEY_HIDE_ON_MINIMIZE, gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget)));
 }
 
 #define GCONF_KEY_SOUND_BEEP            GCONF_KEY_NOTIF_ROOT "sound-beep"
@@ -516,9 +524,13 @@ get_original_cfg_widget (void)
 static GtkWidget *
 get_cfg_widget (void)
 {
-	GtkWidget *cfg, *vbox, *check;
+	GtkWidget *container, *vbox, *check;
 
 	vbox = gtk_vbox_new (FALSE, 6);
+	gtk_widget_show (vbox);
+	
+	container = vbox;
+	
 	check = gtk_check_button_new_with_mnemonic (_("Hidden on startup"));
 
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check),
@@ -527,11 +539,20 @@ get_cfg_widget (void)
 		"toggled",
 		G_CALLBACK (toggled_hidden_on_startup_cb), NULL);
 	gtk_widget_show (check);
-	gtk_box_pack_start (GTK_BOX (vbox), check, FALSE, FALSE, 0);
+	gtk_box_pack_start (GTK_BOX (container), check, FALSE, FALSE, 0);
 
-	gtk_widget_show (vbox);
+	// MINIMIZE
+	check = gtk_check_button_new_with_mnemonic (_("Hide on minimize"));
 
-	return vbox;
+	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check),
+		is_part_enabled (GCONF_KEY_HIDE_ON_MINIMIZE));
+	g_signal_connect (G_OBJECT (check),
+		"toggled",
+		G_CALLBACK (toggled_hidde_on_minimize_cb), NULL);
+	gtk_widget_show (check);
+	gtk_box_pack_start (GTK_BOX (container), check, FALSE, FALSE, 0);
+
+	return container;
 }
 
 void gtkut_window_popup(GtkWidget *window)
@@ -1115,6 +1136,17 @@ void get_shell(void *ep, ESEventTargetShell *t)
 #endif
 
 #if EVOLUTION_VERSION >= 22900
+static gboolean window_state_event (GtkWidget *widget, GdkEventWindowState *event)
+{
+	if (is_part_enabled(GCONF_KEY_HIDE_ON_MINIMIZE) && event->changed_mask == GDK_WINDOW_STATE_ICONIFIED 
+	    && (event->new_window_state == GDK_WINDOW_STATE_ICONIFIED 
+		|| event->new_window_state == (GDK_WINDOW_STATE_ICONIFIED | GDK_WINDOW_STATE_MAXIMIZED)))
+	{
+		gtk_widget_hide (widget);
+	}
+	return TRUE;
+}
+
 gboolean
 e_plugin_ui_init (
 	GtkUIManager *ui_manager,
@@ -1127,6 +1159,11 @@ e_plugin_ui_init (
 				"show",
 				G_CALLBACK (shown_first_time_cb), NULL);
 	}
+    
+	g_signal_connect (G_OBJECT (evo_window),
+		"window-state-event",
+		G_CALLBACK (window_state_event), NULL);
+    
 	return TRUE;
 }
 #endif
