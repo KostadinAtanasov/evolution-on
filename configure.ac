@@ -42,6 +42,7 @@ AC_SUBST(LIBGCONFBRIDGE_LIBS)
 PKG_CHECK_MODULES(TRAY_EPLUGIN,
   [gtk+-3.0 >= $LIBGTK_REQUIRED dnl
    evolution-plugin$EVOLUTION_BASE_VERSION_S >= $EVOLUTION_REQUIRED dnl
+   evolution-shell$EVOLUTION_BASE_VERSION_S >= $EVOLUTION_REQUIRED dnl
 ])
 
 dnl Evolution plugin install directory
