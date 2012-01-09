@@ -11,6 +11,8 @@ AM_MAINTAINER_MODE
 dnl make sure we keep ACLOCAL_FLAGS around for maintainer builds to work
 AC_SUBST(ACLOCAL_AMFLAGS, "\${ACLOCAL_FLAGS}")
 
+GLIB_GSETTINGS
+
 AC_PROG_INTLTOOL([0.21])
 
 AC_PROG_CC

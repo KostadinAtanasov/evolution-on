@@ -26,10 +26,12 @@
 #include <string.h>
 
 #include <gconf/gconf-client.h>
+#if EVOLUTION_VERSION < 30304
 #ifdef HAVE_LIBGCONFBRIDGE
 #include <libgconf-bridge/gconf-bridge.h>
 #else
 #include <e-util/gconf-bridge.h>
+#endif
 #endif
 
 #include <e-util/e-config.h>
@@ -64,13 +66,25 @@
 
 #define GCONF_KEY_NOTIF_ROOT                 "/apps/evolution/eplugin/mail-notification/"
 #define GCONF_KEY_TRAY_ROOT                 "/apps/evolution/eplugin/tray/"
-#define GCONF_KEY_HIDDEN_ON_STARTUP GCONF_KEY_TRAY_ROOT "hidden-on-startup"
-#define GCONF_KEY_HIDE_ON_MINIMIZE GCONF_KEY_TRAY_ROOT "hide-on-minimize"
-#define GCONF_KEY_STATUS_NOTIFICATION GCONF_KEY_NOTIF_ROOT "status-notification"
+#if EVOLUTION_VERSION < 30304
+#define GCONF_KEY_HIDDEN_ON_STARTUP	GCONF_KEY_TRAY_ROOT "hidden-on-startup"
+#define GCONF_KEY_HIDE_ON_MINIMIZE	GCONF_KEY_TRAY_ROOT "hide-on-minimize"
 #define GCONF_KEY_NOTIFY_ONLY_INBOX     GCONF_KEY_NOTIF_ROOT "notify-only-inbox"
 #define GCONF_KEY_ENABLED_DBUS          GCONF_KEY_NOTIF_ROOT "dbus-enabled"
 #define GCONF_KEY_ENABLED_STATUS        GCONF_KEY_NOTIF_ROOT "status-enabled"
 #define GCONF_KEY_ENABLED_SOUND         GCONF_KEY_NOTIF_ROOT "sound-enabled"
+#define GCONF_KEY_STATUS_NOTIFICATION	GCONF_KEY_NOTIF_ROOT "status-notification"
+#else
+#define NOTIF_SCHEMA			"org.gnome.evolution.plugin.mail-notification"
+#define TRAY_SCHEMA			"org.gnome.evolution.plugin.evolution-tray"
+#define CONF_KEY_HIDDEN_ON_STARTUP	"hidden-on-startup"
+#define CONF_KEY_HIDE_ON_MINIMIZE	"hide-on-minimize"
+#define CONF_KEY_NOTIFY_ONLY_INBOX	"notify-only-inbox"
+#define CONF_KEY_ENABLED_DBUS		"notify-dbus-enabled"
+#define CONF_KEY_ENABLED_STATUS		"notify-status-enabled"
+#define CONF_KEY_ENABLED_SOUND		"notify-sound-enabled"
+#define CONF_KEY_STATUS_NOTIFICATION	"notify-status-notification"
+#endif
 
 static guint status_count = 0;
 static gboolean winstatus;
@@ -116,57 +130,97 @@ static void status_icon_activate_cb (void);
 
 //Query GConf
 static gboolean
+#if EVOLUTION_VERSION < 30304
 is_part_enabled (const gchar *gconf_key)
+#else
+is_part_enabled (gchar *schema, const gchar *key)
+#endif
 {
 	/* the part is not enabled by default */
 	gboolean res = FALSE;
+#if EVOLUTION_VERSION < 30304
 	GConfClient *client;
 	GConfValue  *is_key;
+#else
+	GSettings *settings;
+#endif
 
+#if EVOLUTION_VERSION < 30304
 	client = gconf_client_get_default ();
+#else
+	settings = g_settings_new (schema);
+#endif
 
+#if EVOLUTION_VERSION < 30304
 	is_key = gconf_client_get (client, gconf_key, NULL);
 	if (is_key) {
 		res = gconf_client_get_bool (client, gconf_key, NULL);
 		gconf_value_free (is_key);
 	}
-
 	g_object_unref (client);
+#else
+	res = g_settings_get_boolean (settings, key);
+	g_object_unref (settings);
+#endif
+
 
 	return res;
 }
 
-//Set GConf
 static void
+#if EVOLUTION_VERSION < 30304
+//Set GConf
 set_part_enabled (const gchar *gconf_key, gboolean enable)
 {
-	GConfClient *client;
-
-	client = gconf_client_get_default ();
+	GConfClient *client = gconf_client_get_default ();
 
 	gconf_client_set_bool (client, gconf_key, enable, NULL);
 	g_object_unref (client);
 }
+#else
+set_part_enabled (gchar *schema, const gchar *key, gboolean enable)
+{
+	GSettings *settings = g_settings_new (schema);
+	g_settings_set_boolean (settings, key, enable);
+	g_object_unref (settings);
+}
+#endif
 
 //Callback for Configuration Widget
 static void
 toggled_hidden_on_startup_cb (GtkWidget *widget, gpointer data)
 {
 	g_return_if_fail (widget != NULL);
-	set_part_enabled (GCONF_KEY_HIDDEN_ON_STARTUP, gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget)));
+#if EVOLUTION_VERSION < 30304
+	set_part_enabled (GCONF_KEY_HIDDEN_ON_STARTUP,
+#else
+	set_part_enabled (TRAY_SCHEMA, CONF_KEY_HIDDEN_ON_STARTUP,
+#endif
+		gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget)));
 }
 
 static void
 toggled_hidde_on_minimize_cb (GtkWidget *widget, gpointer data)
 {
 	g_return_if_fail (widget != NULL);
-	set_part_enabled (GCONF_KEY_HIDE_ON_MINIMIZE, gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget)));
+#if EVOLUTION_VERSION < 30304
+	set_part_enabled (GCONF_KEY_HIDE_ON_MINIMIZE,
+#else
+	set_part_enabled (TRAY_SCHEMA, CONF_KEY_HIDE_ON_MINIMIZE,
+#endif
+		gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget)));
 }
 
+#if EVOLUTION_VERSION < 30304
 #define GCONF_KEY_SOUND_BEEP            GCONF_KEY_NOTIF_ROOT "sound-beep"
-#define GCONF_KEY_SOUND_FILE            GCONF_KEY_NOTIF_ROOT "sound-file"
-#define GCONF_KEY_SOUND_PLAY_FILE       GCONF_KEY_NOTIF_ROOT "sound-play-file"
 #define GCONF_KEY_SOUND_USE_THEME       GCONF_KEY_NOTIF_ROOT "sound-use-theme"
+#define CONF_KEY_SOUND_PLAY_FILE	GCONF_KEY_NOTIF_ROOT "sound-play-file"
+#else
+#define CONF_KEY_SOUND_BEEP		"notify-sound-beep"
+#define CONF_KEY_SOUND_USE_THEME	"notify-sound-use-theme"
+#define CONF_KEY_SOUND_PLAY_FILE	"notify-sound-play-file"
+#endif
+#define GCONF_KEY_SOUND_FILE            GCONF_KEY_NOTIF_ROOT "sound-file"
 
 static void
 do_play_sound (gboolean beep, gboolean use_theme, const gchar *file)
@@ -248,8 +302,14 @@ sound_notify_idle_cb (gpointer user_data)
 	client = gconf_client_get_default ();
 	file = gconf_client_get_string (client, GCONF_KEY_SOUND_FILE, NULL);
 
-	do_play_sound (is_part_enabled (GCONF_KEY_SOUND_BEEP),
+	do_play_sound (
+#if EVOLUTION_VERSION < 30304
+			is_part_enabled (GCONF_KEY_SOUND_BEEP),
 			is_part_enabled (GCONF_KEY_SOUND_USE_THEME),
+#else
+			is_part_enabled (NOTIF_SCHEMA, CONF_KEY_SOUND_BEEP),
+			is_part_enabled (NOTIF_SCHEMA, CONF_KEY_SOUND_USE_THEME),
+#endif
 			file);
 
 	g_object_unref (client);
@@ -269,10 +329,18 @@ get_config_widget_status (void)
 	GtkWidget *master;
 	GtkWidget *container;
 	GtkWidget *widget;
+#if EVOLUTION_VERSION < 30304
 	GConfBridge *bridge;
+#else
+	GSettings *settings;
+#endif
 	const gchar *text;
 
+#if EVOLUTION_VERSION < 30304
 	bridge = gconf_bridge_get ();
+#else
+	settings = g_settings_new ("org.gnome.evolution.plugin.mail-notification");
+#endif
 
 	vbox = gtk_vbox_new (FALSE, 6);
 	gtk_widget_show (vbox);
@@ -284,9 +352,15 @@ get_config_widget_status (void)
 	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
 	gtk_widget_show (widget);
 
+#if EVOLUTION_VERSION < 30304
 	gconf_bridge_bind_property (
 		bridge, GCONF_KEY_ENABLED_STATUS,
 		G_OBJECT (widget), "active");
+#else
+	g_settings_bind (settings, CONF_KEY_ENABLED_STATUS,
+		G_OBJECT (widget),
+		"active", G_SETTINGS_BIND_DEFAULT);
+#endif
 
 	master = widget;
 
@@ -324,9 +398,15 @@ get_config_widget_status (void)
 	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
 	gtk_widget_show (widget);
 
+#if EVOLUTION_VERSION < 30304
 	gconf_bridge_bind_property (
 		bridge, GCONF_KEY_STATUS_NOTIFICATION,
 		G_OBJECT (widget), "active");
+#else
+	g_settings_bind (settings, CONF_KEY_STATUS_NOTIFICATION,
+		G_OBJECT (widget),
+		"active", G_SETTINGS_BIND_DEFAULT);
+#endif
 #endif
 
 	return vbox;
@@ -341,13 +421,21 @@ get_config_widget_sound (void)
 	GtkWidget *master;
 	GtkWidget *widget;
 	gchar *file;
+#if EVOLUTION_VERSION < 30304
 	GConfBridge *bridge;
+#else
+	GSettings *settings;
+#endif
 	GConfClient *client;
 	GSList *group = NULL;
 	struct _SoundConfigureWidgets *scw;
 	const gchar *text;
 
+#if EVOLUTION_VERSION < 30304
 	bridge = gconf_bridge_get ();
+#else
+	settings = g_settings_new ("org.gnome.evolution.plugin.mail-notification");
+#endif
 
 	scw = g_malloc0 (sizeof (struct _SoundConfigureWidgets));
 
@@ -361,9 +449,15 @@ get_config_widget_sound (void)
 	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
 	gtk_widget_show (widget);
 
+#if EVOLUTION_VERSION < 30304
 	gconf_bridge_bind_property (
 		bridge, GCONF_KEY_ENABLED_SOUND,
 		G_OBJECT (widget), "active");
+#else
+	g_settings_bind (settings, CONF_KEY_ENABLED_SOUND,
+		G_OBJECT (widget),
+		"active", G_SETTINGS_BIND_DEFAULT);
+#endif
 
 	master = widget;
 	scw->enable = widget;
@@ -401,9 +495,15 @@ get_config_widget_sound (void)
 	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
 	gtk_widget_show (widget);
 
+#if EVOLUTION_VERSION < 30304
 	gconf_bridge_bind_property (
 		bridge, GCONF_KEY_SOUND_BEEP,
 		G_OBJECT (widget), "active");
+#else
+	g_settings_bind (settings, CONF_KEY_SOUND_BEEP,
+		G_OBJECT (widget),
+		"active", G_SETTINGS_BIND_DEFAULT);
+#endif
 
 	scw->beep = widget;
 
@@ -414,9 +514,15 @@ get_config_widget_sound (void)
 	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
 	gtk_widget_show (widget);
 
+#if EVOLUTION_VERSION < 30304
 	gconf_bridge_bind_property (
 		bridge, GCONF_KEY_SOUND_USE_THEME,
 		G_OBJECT (widget), "active");
+#else
+	g_settings_bind (settings, CONF_KEY_SOUND_USE_THEME,
+		G_OBJECT (widget),
+		"active", G_SETTINGS_BIND_DEFAULT);
+#endif
 
 	scw->use_theme = widget;
 
@@ -433,9 +539,15 @@ get_config_widget_sound (void)
 	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
 	gtk_widget_show (widget);
 
+#if EVOLUTION_VERSION < 30304
 	gconf_bridge_bind_property (
 		bridge, GCONF_KEY_SOUND_PLAY_FILE,
 		G_OBJECT (widget), "active");
+#else
+	g_settings_bind (settings, CONF_KEY_SOUND_PLAY_FILE,
+		G_OBJECT (widget),
+		"active", G_SETTINGS_BIND_DEFAULT);
+#endif
 
 	scw->file = widget;
 
@@ -483,10 +595,18 @@ get_original_cfg_widget (void)
 {
 	GtkWidget *container;
 	GtkWidget *widget;
+#if EVOLUTION_VERSION < 30304
 	GConfBridge *bridge;
+#else
+	GSettings *settings;
+#endif
 	const gchar *text;
 
+#if EVOLUTION_VERSION < 30304
 	bridge = gconf_bridge_get ();
+#else
+	settings = g_settings_new ("org.gnome.evolution.plugin.mail-notification");
+#endif
 
 	widget = gtk_vbox_new (FALSE, 12);
 	gtk_widget_show (widget);
@@ -498,18 +618,30 @@ get_original_cfg_widget (void)
 	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
 	gtk_widget_show (widget);
 
+#if EVOLUTION_VERSION < 30304
 	gconf_bridge_bind_property (
 		bridge, GCONF_KEY_NOTIFY_ONLY_INBOX,
 		G_OBJECT (widget), "active");
+#else
+	g_settings_bind (settings, CONF_KEY_NOTIFY_ONLY_INBOX,
+		G_OBJECT (widget),
+		"active", G_SETTINGS_BIND_DEFAULT);
+#endif
 
 	text = _("Generate a _D-Bus message");
 	widget = gtk_check_button_new_with_mnemonic (text);
 	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
 	gtk_widget_show (widget);
 
+#if EVOLUTION_VERSION < 30304
 	gconf_bridge_bind_property (
 		bridge, GCONF_KEY_ENABLED_DBUS,
 		G_OBJECT (widget), "active");
+#else
+	g_settings_bind (settings, CONF_KEY_ENABLED_DBUS,
+		G_OBJECT (widget),
+		"active", G_SETTINGS_BIND_DEFAULT);
+#endif
 
 	widget = get_config_widget_status ();
 	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
@@ -534,7 +666,11 @@ get_cfg_widget (void)
 	check = gtk_check_button_new_with_mnemonic (_("Hidden on startup"));
 
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check),
+#if EVOLUTION_VERSION < 30304
 		is_part_enabled (GCONF_KEY_HIDDEN_ON_STARTUP));
+#else
+		is_part_enabled (TRAY_SCHEMA, CONF_KEY_HIDDEN_ON_STARTUP));
+#endif
 	g_signal_connect (G_OBJECT (check),
 		"toggled",
 		G_CALLBACK (toggled_hidden_on_startup_cb), NULL);
@@ -545,7 +681,11 @@ get_cfg_widget (void)
 	check = gtk_check_button_new_with_mnemonic (_("Hide on minimize"));
 
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check),
+#if EVOLUTION_VERSION < 30304
 		is_part_enabled (GCONF_KEY_HIDE_ON_MINIMIZE));
+#else
+		is_part_enabled (TRAY_SCHEMA, CONF_KEY_HIDE_ON_MINIMIZE));
+#endif
 	g_signal_connect (G_OBJECT (check),
 		"toggled",
 		G_CALLBACK (toggled_hidde_on_minimize_cb), NULL);
@@ -1030,7 +1170,11 @@ new_notify_status (EMEventTargetFolder *t)
 
 #ifdef HAVE_LIBNOTIFY
 	/* Now check whether we're supposed to send notifications */
+#if EVOLUTION_VERSION < 30304
 	if (is_part_enabled (GCONF_KEY_STATUS_NOTIFICATION)) {
+#else
+	if (is_part_enabled (NOTIF_SCHEMA, CONF_KEY_STATUS_NOTIFICATION)) {
+#endif
 		gchar *safetext;
 
 		safetext = g_markup_escape_text (msg, strlen (msg));
@@ -1126,7 +1270,11 @@ void get_shell(void *ep, ESEventTargetShell *t)
 	EShellPrivate *priv = (EShellPrivate *)shell->priv;
 	evo_window = (GtkWidget *)priv->windows;
 #endif
+#if EVOLUTION_VERSION < 30304
 	if (is_part_enabled(GCONF_KEY_HIDDEN_ON_STARTUP)) {
+#else
+	if (is_part_enabled(TRAY_SCHEMA, CONF_KEY_HIDDEN_ON_STARTUP)) {
+#endif
 		shown_first_time_handle =
 			g_signal_connect (G_OBJECT (evo_window),
 				"show",
@@ -1138,10 +1286,13 @@ void get_shell(void *ep, ESEventTargetShell *t)
 #if EVOLUTION_VERSION >= 22900
 static gboolean window_state_event (GtkWidget *widget, GdkEventWindowState *event)
 {
-	if (is_part_enabled(GCONF_KEY_HIDE_ON_MINIMIZE) && event->changed_mask == GDK_WINDOW_STATE_ICONIFIED 
-	    && (event->new_window_state == GDK_WINDOW_STATE_ICONIFIED 
-		|| event->new_window_state == (GDK_WINDOW_STATE_ICONIFIED | GDK_WINDOW_STATE_MAXIMIZED)))
-	{
+#if EVOLUTION_VERSION < 30304
+	if (is_part_enabled(GCONF_KEY_HIDE_ON_MINIMIZE)
+#else
+	if (is_part_enabled(TRAY_SCHEMA, CONF_KEY_HIDE_ON_MINIMIZE)
+#endif
+	&& event->changed_mask == GDK_WINDOW_STATE_ICONIFIED
+	&& event->new_window_state & GDK_WINDOW_STATE_ICONIFIED) {
 		gtk_widget_hide (widget);
 	}
 	return TRUE;
@@ -1153,17 +1304,21 @@ e_plugin_ui_init (
 	EShellView *shell_view)
 {
 	evo_window = e_shell_view_get_shell_window (shell_view);
+#if EVOLUTION_VERSION < 30304
 	if (is_part_enabled(GCONF_KEY_HIDDEN_ON_STARTUP)) {
+#else
+	if (is_part_enabled(TRAY_SCHEMA, CONF_KEY_HIDDEN_ON_STARTUP)) {
+#endif
 		shown_first_time_handle =
 			g_signal_connect (G_OBJECT (evo_window),
 				"show",
 				G_CALLBACK (shown_first_time_cb), NULL);
 	}
-    
+
 	g_signal_connect (G_OBJECT (evo_window),
 		"window-state-event",
 		G_CALLBACK (window_state_event), NULL);
-    
+
 	return TRUE;
 }
 #endif

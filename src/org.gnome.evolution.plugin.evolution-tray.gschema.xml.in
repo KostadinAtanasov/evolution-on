@@ -1,0 +1,14 @@
+<schemalist>
+  <schema id="org.gnome.evolution.plugin.evolution-tray" path="/apps/evolution/">
+    <key name="hidden-on-startup" type="b">
+      <default>false</default>
+      <summary>Start Evolution Mail minimized.</summary>
+      <description>On startup Evolution Mail will start minimized to tray</description>
+    </key>
+    <key name="hide-on-minimize" type="b">
+      <default>false</default>
+      <summary>Hide Evolution Mail on minimize.</summary>
+      <description>When pressing minimize button Evolution Mail window is automatically hidden</description>
+    </key>
+  </schema>
+</schemalist>

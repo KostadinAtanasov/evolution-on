@@ -1,0 +1,33 @@
+<gconfschemafile>
+  <schemalist>
+  
+    <schema>
+      <key>/schemas/apps/evolution/eplugin/tray/hidden-on-startup</key>
+      <applyto>/apps/evolution/eplugin/tray/hidden-on-startup</applyto>
+      <owner>tray</owner>
+      <type>bool</type>
+      <default>false</default>
+      <locale name="C">
+        <short>Start Evolution Mail minimized.</short>
+        <long>
+            On startup Evolution Mail will start minimized to tray
+        </long>
+      </locale>
+    </schema>
+    
+    <schema>
+      <key>/schemas/apps/evolution/eplugin/tray/hide-on-minimize</key>
+      <applyto>/apps/evolution/eplugin/tray/hide-on-minimize</applyto>
+      <owner>tray</owner>
+      <type>bool</type>
+      <default>false</default>
+      <locale name="C">
+        <short>Hide Evolution Mail on minimize.</short>
+        <long>
+	    When pressing minimize button Evolution Mail window is automatically hidden
+        </long>
+      </locale>
+    </schema>
+
+  </schemalist>
+</gconfschemafile>

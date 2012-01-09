@@ -33,11 +33,23 @@ liborg_gnome_evolution_tray_la_SOURCES = tray.c
 liborg_gnome_evolution_tray_la_LIBADD = $(LIBGCONFBRIDGE_LIBS) $(LIBNOTIFY_LIBS)
 liborg_gnome_evolution_tray_la_LDFLAGS = -module -avoid-version -rpath $(PLUGIN_INSTALL_DIR)
 
+gsettings_SCHEMAS =                            \
+	org.gnome.evolution.plugin.evolution-tray.gschema.xml
+
+@INTLTOOL_XML_NOMERGE_RULE@
+
+@GSETTINGS_RULES@
+
+convertdir = $(datadir)/GConf/gsettings
+convert_DATA = evolution-tray.convert
+
 EXTRA_DIST = 	org-gnome-evolution-tray.eplug.xml	\
-		$(schema_in_files)
+		$(convert_DATA)                         \
+		$(gsettings_SCHEMAS:.xml=.xml.in.in)
+
 
 BUILT_SOURCES = org-gnome-evolution-tray.eplug
 
 CLEANFILES = $(BUILT_SOURCES)
 
-DISTCLEANFILES = $(schema_DATA)
+DISTCLEANFILES = $(gsettings_SCHEMAS)
