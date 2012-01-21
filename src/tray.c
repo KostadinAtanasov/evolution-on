@@ -214,7 +214,7 @@ toggled_hidde_on_minimize_cb (GtkWidget *widget, gpointer data)
 #if EVOLUTION_VERSION < 30304
 #define GCONF_KEY_SOUND_BEEP            GCONF_KEY_NOTIF_ROOT "sound-beep"
 #define GCONF_KEY_SOUND_USE_THEME       GCONF_KEY_NOTIF_ROOT "sound-use-theme"
-#define CONF_KEY_SOUND_PLAY_FILE	GCONF_KEY_NOTIF_ROOT "sound-play-file"
+#define GCONF_KEY_SOUND_PLAY_FILE	GCONF_KEY_NOTIF_ROOT "sound-play-file"
 #else
 #define CONF_KEY_SOUND_BEEP		"notify-sound-beep"
 #define CONF_KEY_SOUND_USE_THEME	"notify-sound-use-theme"
