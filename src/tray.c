@@ -43,6 +43,10 @@
 #include <shell/e-shell-view.h>
 #include <shell/e-shell-window.h>
 #endif
+#if EVOLUTION_VERSION >= 30305
+#include <libemail-utils/e-account-utils.h>
+#include <mail/e-mail.h>
+#else
 #if EVOLUTION_VERSION >= 29101
 #include <e-util/e-account-utils.h>
 #include <mail/e-mail.h>
@@ -50,7 +54,13 @@
 #include <mail/mail-config.h>
 #include <mail/mail-session.h>
 #endif
+#endif
+#if EVOLUTION_VERSION >= 30305
+#include <libemail-engine/e-mail-folder-utils.h>
+#include <libemail-engine/mail-ops.h>
+#else
 #include <mail/mail-ops.h>
+#endif
 #include <e-util/e-plugin.h>
 
 #include <mail/em-event.h>
