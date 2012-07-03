@@ -1164,9 +1164,10 @@ new_notify_status (EMEventTargetFolder *t)
 #endif
 
 #if EVOLUTION_VERSION > 30501
-	registry = e_shell_get_registry (shell);
-	source = e_source_registry_ref_default_mail_identity (registry);
-	name = e_source_get_display_name (source);
+		uid = camel_service_get_uid (CAMEL_SERVICE (t->store));
+		registry = e_shell_get_registry (shell);
+		source = e_source_registry_ref_source (registry,uid);
+		name = e_source_get_display_name (source);
 #else
 #if EVOLUTION_VERSION >= 30102
 		uid = camel_service_get_uid (CAMEL_SERVICE (t->store));
