@@ -25,7 +25,10 @@
 #include <glib/gi18n.h>
 #include <string.h>
 
+#if EVOLUTION_VERSION <= 30503
 #include <gconf/gconf-client.h>
+#endif
+
 #if EVOLUTION_VERSION < 30304
 #ifdef HAVE_LIBGCONFBRIDGE
 #include <libgconf-bridge/gconf-bridge.h>
@@ -43,6 +46,7 @@
 #include <shell/e-shell-view.h>
 #include <shell/e-shell-window.h>
 #endif
+#if EVOLUTION_VERSION <= 30501
 #if EVOLUTION_VERSION >= 30305
 #include <libemail-utils/e-account-utils.h>
 #include <mail/e-mail.h>
@@ -53,6 +57,7 @@
 #else
 #include <mail/mail-config.h>
 #include <mail/mail-session.h>
+#endif
 #endif
 #endif
 #if EVOLUTION_VERSION >= 30305
@@ -66,6 +71,9 @@
 #include <mail/em-event.h>
 #include <mail/em-folder-tree.h>
 
+#if EVOLUTION_VERSION > 30501
+#include <mail/e-mail-reader.h>
+#endif
 
 #include <e-util/e-icon-factory.h>
 #include <shell/es-event.h>
@@ -225,12 +233,13 @@ toggled_hidde_on_minimize_cb (GtkWidget *widget, gpointer data)
 #define GCONF_KEY_SOUND_BEEP            GCONF_KEY_NOTIF_ROOT "sound-beep"
 #define GCONF_KEY_SOUND_USE_THEME       GCONF_KEY_NOTIF_ROOT "sound-use-theme"
 #define GCONF_KEY_SOUND_PLAY_FILE	GCONF_KEY_NOTIF_ROOT "sound-play-file"
+#define GCONF_KEY_SOUND_FILE            GCONF_KEY_NOTIF_ROOT "sound-file"
 #else
 #define CONF_KEY_SOUND_BEEP		"notify-sound-beep"
 #define CONF_KEY_SOUND_USE_THEME	"notify-sound-use-theme"
 #define CONF_KEY_SOUND_PLAY_FILE	"notify-sound-play-file"
+#define CONF_KEY_SOUND_FILE		"notify-sound-file"
 #endif
-#define GCONF_KEY_SOUND_FILE            GCONF_KEY_NOTIF_ROOT "sound-file"
 
 static void
 do_play_sound (gboolean beep, gboolean use_theme, const gchar *file)
@@ -264,16 +273,33 @@ static void
 sound_file_set_cb (GtkWidget *widget, gpointer data)
 {
 	gchar *file;
+#if EVOLUTION_VERSION < 30304
 	GConfClient *client;
+#else
+	GSettings *settings;
+#endif
 
 	g_return_if_fail (widget != NULL);
 
+#if EVOLUTION_VERSION < 30304
 	client = gconf_client_get_default ();
+#else
+	settings = g_settings_new ("org.gnome.evolution.plugin.mail-notification");
+#endif
+
 	file = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (widget));
 
+#if EVOLUTION_VERSION < 30304
 	gconf_client_set_string (client, GCONF_KEY_SOUND_FILE, file ? file : "", NULL);
+#else
+	g_settings_set_string (settings, CONF_KEY_SOUND_FILE, file ? file : "");
+#endif
 
+#if EVOLUTION_VERSION < 30304
 	g_object_unref (client);
+#else
+	g_object_unref (settings);
+#endif
 	g_free (file);
 }
 
@@ -304,13 +330,26 @@ static gboolean
 sound_notify_idle_cb (gpointer user_data)
 {
 	gchar *file;
+#if EVOLUTION_VERSION < 30304
 	GConfClient *client;
+#else
+	GSettings *settings;
+#endif
 	struct _SoundNotifyData *data = (struct _SoundNotifyData *) user_data;
 
 	g_return_val_if_fail (data != NULL, FALSE);
 
+#if EVOLUTION_VERSION < 30304
 	client = gconf_client_get_default ();
+#else
+	settings = g_settings_new ("org.gnome.evolution.plugin.mail-notification");
+#endif
+
+#if EVOLUTION_VERSION < 30304
 	file = gconf_client_get_string (client, GCONF_KEY_SOUND_FILE, NULL);
+#else
+	file = g_settings_get_string (settings, CONF_KEY_SOUND_FILE);
+#endif
 
 	do_play_sound (
 #if EVOLUTION_VERSION < 30304
@@ -322,7 +361,11 @@ sound_notify_idle_cb (gpointer user_data)
 #endif
 			file);
 
+#if EVOLUTION_VERSION < 30304
 	g_object_unref (client);
+#else
+	g_object_unref (settings);
+#endif
 	g_free (file);
 
 	time (&data->last_notify);
@@ -433,10 +476,10 @@ get_config_widget_sound (void)
 	gchar *file;
 #if EVOLUTION_VERSION < 30304
 	GConfBridge *bridge;
+	GConfClient *client;
 #else
 	GSettings *settings;
 #endif
-	GConfClient *client;
 	GSList *group = NULL;
 	struct _SoundConfigureWidgets *scw;
 	const gchar *text;
@@ -578,13 +621,21 @@ get_config_widget_sound (void)
 
 	scw->play = widget;
 
+#if EVOLUTION_VERSION < 30304
 	client = gconf_client_get_default ();
 	file = gconf_client_get_string (client, GCONF_KEY_SOUND_FILE, NULL);
+#else
+	file = g_settings_get_string(settings, CONF_KEY_SOUND_FILE);
+#endif
 
 	if (file && *file)
 		gtk_file_chooser_set_filename (GTK_FILE_CHOOSER (scw->filechooser), file);
 
+#if EVOLUTION_VERSION < 30304
 	g_object_unref (client);
+#else
+	g_object_unref (settings);
+#endif
 	g_free (file);
 
 	g_signal_connect (
@@ -1069,6 +1120,14 @@ new_notify_status (EMEventTargetFolder *t)
 {
 	gchar *msg;
 	gboolean new_icon = !tray_icon;
+#if EVOLUTION_VERSION > 30501
+	EShell *shell = e_shell_get_default ();
+	CamelStore *store;
+	gchar *folder_name;
+	EMailBackend *backend;
+	EMailSession *session;
+	EShellBackend *shell_backend;
+#endif
 #if EVOLUTION_VERSION >= 30102
 	gchar *uri;
 
@@ -1085,15 +1144,26 @@ new_notify_status (EMEventTargetFolder *t)
 		(GDestroyNotify) g_free);
 
 	if (!status_count) {
+#if EVOLUTION_VERSION > 30501
+		ESource *source = NULL;
+		ESourceRegistry *registry;
+		const *name;
+#else
 		EAccount *account;
+#endif
 		gchar *folder_name;
 #if EVOLUTION_VERSION >= 30102
 		const gchar *uid;
-		gchar *name = t->display_name;
+		gchar *aname = t->display_name;
 #else
-		gchar *name = t->name;
+		gchar *aname = t->name;
 #endif
 
+#if EVOLUTION_VERSION > 30501
+	registry = e_shell_get_registry (shell);
+	source = e_source_registry_ref_default_mail_identity (registry);
+	name = e_source_get_display_name (source);
+#else
 #if EVOLUTION_VERSION >= 30102
 		uid = camel_service_get_uid (CAMEL_SERVICE (t->store));
 		account = e_get_account_by_uid (uid);
@@ -1108,7 +1178,24 @@ new_notify_status (EMEventTargetFolder *t)
 #endif
 #endif
 #endif
+#endif
 
+#if EVOLUTION_VERSION > 30501
+		shell_backend = e_shell_get_backend_by_name (shell, "mail");
+
+		backend = E_MAIL_BACKEND (shell_backend);
+		session = e_mail_backend_get_session (backend);
+
+		e_mail_folder_uri_parse (
+			CAMEL_SESSION (session), t->folder_name,
+			&store, &folder_name, NULL);
+
+		if (name != NULL)
+			folder_name = g_strdup_printf (
+				"%s/%s", name, folder_name);
+		else
+			folder_name = g_strdup (folder_name);
+#else
 #if EVOLUTION_VERSION >= 30102
 		if (account != NULL)
 			folder_name = g_strdup_printf (
@@ -1119,9 +1206,10 @@ new_notify_status (EMEventTargetFolder *t)
 		if (account != NULL)
 			folder_name = g_strdup_printf (
 				"%s/%s", e_account_get_string (account, E_ACCOUNT_NAME),
-				name);
+				aname);
 		else
 			folder_name = g_strdup (t->name);
+#endif
 #endif
 
 		status_count = t->new;
