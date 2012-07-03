@@ -1131,7 +1131,11 @@ new_notify_status (EMEventTargetFolder *t)
 #if EVOLUTION_VERSION >= 30102
 	gchar *uri;
 
+#if EVOLUTION_VERSION > 30501
+	uri = g_strdup(t->folder_name);
+#else
 	uri = e_mail_folder_uri_build (t->store, t->folder_name);
+#endif
 #endif
 
 	g_object_set_data_full (
