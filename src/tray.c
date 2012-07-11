@@ -818,7 +818,7 @@ toggle_window (void)
 		}
 	}
 #else
-	if (gtk_window_is_active(GTK_WINDOW(evo_window))) {
+	if (gtk_widget_get_visible(evo_window)) {
 		gtk_widget_hide(GTK_WIDGET(evo_window));
 		winstatus = TRUE;
 	} else {
