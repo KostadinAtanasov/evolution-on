@@ -838,7 +838,7 @@ icon_activated (GtkStatusIcon *icon, gpointer pnotify)
 		e_icon_factory_get_icon (
 			"mail-read",
 			GTK_ICON_SIZE_SMALL_TOOLBAR));
-#if GTK_VERSION >= 2016000
+#if GTK_CHECK_VERSION (2,16,0)
 	gtk_status_icon_set_has_tooltip (tray_icon, FALSE);
 #endif
 	winnotify = FALSE;
@@ -1262,7 +1262,7 @@ new_notify_status (EMEventTargetFolder *t)
 			status_count), status_count);
 	}
 
-#if GTK_VERSION >= 2016000
+#if GTK_CHECK_VERSION (2,16,0)
 	gtk_status_icon_set_tooltip_text (tray_icon, msg);
 #endif
 	gtk_status_icon_set_from_pixbuf (
