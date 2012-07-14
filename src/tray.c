@@ -1,5 +1,5 @@
 /*  Evoution Tray Icon Plugin
- *  Copyright (C) 2008-2010 Lucian Langa <cooly@gnome.eu.org>
+ *  Copyright (C) 2008-2012 Lucian Langa <cooly@gnome.eu.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -378,9 +378,6 @@ sound_notify_idle_cb (gpointer user_data)
 static GtkWidget *
 get_config_widget_status (void)
 {
-	GtkWidget *vbox;
-	GtkWidget *master;
-	GtkWidget *container;
 	GtkWidget *widget;
 #if EVOLUTION_VERSION < 30304
 	GConfBridge *bridge;
@@ -395,60 +392,9 @@ get_config_widget_status (void)
 	settings = g_settings_new ("org.gnome.evolution.plugin.mail-notification");
 #endif
 
-	vbox = gtk_vbox_new (FALSE, 6);
-	gtk_widget_show (vbox);
-
-	container = vbox;
-
-	text = _("Show icon in _notification area");
-	widget = gtk_check_button_new_with_mnemonic (text);
-	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
-	gtk_widget_show (widget);
-
-#if EVOLUTION_VERSION < 30304
-	gconf_bridge_bind_property (
-		bridge, GCONF_KEY_ENABLED_STATUS,
-		G_OBJECT (widget), "active");
-#else
-	g_settings_bind (settings, CONF_KEY_ENABLED_STATUS,
-		G_OBJECT (widget),
-		"active", G_SETTINGS_BIND_DEFAULT);
-#endif
-
-	master = widget;
-
-	widget = gtk_alignment_new (0.0, 0.0, 1.0, 1.0);
-	gtk_alignment_set_padding (GTK_ALIGNMENT (widget), 0, 0, 12, 0);
-	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
-	gtk_widget_show (widget);
-
-#if EVOLUTION_VERSION >= 29101
-	g_object_bind_property (
-		master, "active",
-		widget, "sensitive",
-		G_BINDING_SYNC_CREATE);
-#else
-#if EVOLUTION_VERSION >= 22502
-	e_binding_new (
-		master, "active",
-		widget, "sensitive");
-#else
-	g_warning("add missing properties binding for 2.24\n");
-#endif
-#endif
-
-	container = widget;
-
-	widget = gtk_vbox_new (FALSE, 6);
-	gtk_container_add (GTK_CONTAINER (container), widget);
-	gtk_widget_show (widget);
-
-	container = widget;
-
 #ifdef HAVE_LIBNOTIFY
 	text = _("Popup _message together with the icon");
 	widget = gtk_check_button_new_with_mnemonic (text);
-	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
 	gtk_widget_show (widget);
 
 #if EVOLUTION_VERSION < 30304
@@ -462,7 +408,7 @@ get_config_widget_status (void)
 #endif
 #endif
 
-	return vbox;
+	return widget;
 }
 
 
@@ -818,7 +764,7 @@ toggle_window (void)
 		}
 	}
 #else
-	if (gtk_widget_get_visible(evo_window)) {
+	if (gtk_widget_get_visible(GTK_WIDGET(evo_window))) {
 		gtk_widget_hide(GTK_WIDGET(evo_window));
 		winstatus = TRUE;
 	} else {
@@ -1274,11 +1220,9 @@ new_notify_status (EMEventTargetFolder *t)
 #ifdef HAVE_LIBNOTIFY
 	/* Now check whether we're supposed to send notifications */
 #if EVOLUTION_VERSION < 30304
-	if (is_part_enabled (NOTIF_SCHEMA, CONF_KEY_ENABLED_STATUS)
-	&& is_part_enabled (GCONF_KEY_STATUS_NOTIFICATION)) {
+	if (is_part_enabled (GCONF_KEY_STATUS_NOTIFICATION)) {
 #else
-	if (is_part_enabled (NOTIF_SCHEMA, CONF_KEY_ENABLED_STATUS)
-	&& is_part_enabled (NOTIF_SCHEMA, CONF_KEY_STATUS_NOTIFICATION)) {
+	if (is_part_enabled (NOTIF_SCHEMA, CONF_KEY_STATUS_NOTIFICATION)) {
 #endif
 		gchar *safetext;
 
