@@ -45,7 +45,7 @@ convert_DATA = evolution-tray.convert
 
 EXTRA_DIST = 	org-gnome-evolution-tray.eplug.xml	\
 		$(convert_DATA)                         \
-		$(gsettings_SCHEMAS:.xml=.xml.in.in)
+		$(gsettings_SCHEMAS:.xml=.xml.in)
 
 
 BUILT_SOURCES = org-gnome-evolution-tray.eplug
