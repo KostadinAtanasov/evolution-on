@@ -2,8 +2,8 @@
   <schemalist>
   
     <schema>
-      <key>/schemas/apps/evolution/eplugin/tray/hidden-on-startup</key>
-      <applyto>/apps/evolution/eplugin/tray/hidden-on-startup</applyto>
+      <key>/schemas/apps/evolution/eplugin/evolution-tray/hidden-on-startup</key>
+      <applyto>/apps/evolution/eplugin/evolution-tray/hidden-on-startup</applyto>
       <owner>tray</owner>
       <type>bool</type>
       <default>false</default>
@@ -16,8 +16,8 @@
     </schema>
     
     <schema>
-      <key>/schemas/apps/evolution/eplugin/tray/hide-on-minimize</key>
-      <applyto>/apps/evolution/eplugin/tray/hide-on-minimize</applyto>
+      <key>/schemas/apps/evolution/eplugin/evolution-tray/hide-on-minimize</key>
+      <applyto>/apps/evolution/eplugin/evolution-tray/hide-on-minimize</applyto>
       <owner>tray</owner>
       <type>bool</type>
       <default>false</default>
@@ -30,8 +30,8 @@
     </schema>
 
     <schema>
-      <key>/schemas/apps/evolution/eplugin/tray/hide-on-close</key>
-      <applyto>/apps/evolution/eplugin/tray/hide-on-close</applyto>
+      <key>/schemas/apps/evolution/eplugin/evolution-tray/hide-on-close</key>
+      <applyto>/apps/evolution/eplugin/evolution-tray/hide-on-close</applyto>
       <owner>tray</owner>
       <type>bool</type>
       <default>false</default>
