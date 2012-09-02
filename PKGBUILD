@@ -9,7 +9,7 @@ arch=('i686' 'x86_64')
 url="https://github.com/KostadinAtanasov/evolution-tray-arch"
 license=('GPL')
 groups=('office')
-depends=('evolution>=2.30' 'libgnomeui' 'gconf' 'libnotify')
+depends=('evolution>=2.30' 'gconf' 'libnotify')
 makedepends=('git' 'autoconf>=2.53' 'automake>=1.8' 'libtool>=1.4.3' 'glib2>=2.2.0' 'pkgconfig>=0.14.0' 'intltool>=0.25' 'gnome-common>=2.3.0')
 provides=('evolution-tray-arch')
 conflicts=('evolution-tray')
