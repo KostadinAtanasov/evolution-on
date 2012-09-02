@@ -83,7 +83,7 @@
 #endif
 
 #define GCONF_KEY_NOTIF_ROOT                 "/apps/evolution/eplugin/mail-notification/"
-#define GCONF_KEY_TRAY_ROOT                 "/apps/evolution/eplugin/tray/"
+#define GCONF_KEY_TRAY_ROOT                 "/apps/evolution/eplugin/evolution-tray/"
 #if EVOLUTION_VERSION < 30304
 #define GCONF_KEY_HIDDEN_ON_STARTUP	GCONF_KEY_TRAY_ROOT "hidden-on-startup"
 #define GCONF_KEY_HIDE_ON_MINIMIZE	GCONF_KEY_TRAY_ROOT "hide-on-minimize"
