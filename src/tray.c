@@ -1427,7 +1427,7 @@ static gboolean window_state_event (GtkWidget *widget, GdkEventWindowState *even
 #endif
 	&& event->changed_mask == GDK_WINDOW_STATE_ICONIFIED
 	&& event->new_window_state & GDK_WINDOW_STATE_ICONIFIED) {
-		gtk_widget_hide (widget);
+		toggle_window ();
 	}
 	return TRUE;
 }
