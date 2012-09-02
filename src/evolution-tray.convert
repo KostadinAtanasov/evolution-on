@@ -5,3 +5,4 @@ last-upgraded-version = /apps/evolution/last_version
 [org.gnome.evolution.plugin.evolution-tray]
 hidden-on-startup = /apps/evolution/plugin/evolution-tray/hidden-on-startup
 hide-on-minimize = /apps/evolution/plugin/evolution-tray/hide-on-minimize
+hide-on-close = /apps/evolution/plugin/evolution-tray/hide-on-close

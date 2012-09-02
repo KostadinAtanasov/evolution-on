@@ -87,6 +87,7 @@
 #if EVOLUTION_VERSION < 30304
 #define GCONF_KEY_HIDDEN_ON_STARTUP	GCONF_KEY_TRAY_ROOT "hidden-on-startup"
 #define GCONF_KEY_HIDE_ON_MINIMIZE	GCONF_KEY_TRAY_ROOT "hide-on-minimize"
+#define GCONF_KEY_HIDE_ON_CLOSE	GCONF_KEY_TRAY_ROOT "hide-on-close"
 #define GCONF_KEY_NOTIFY_ONLY_INBOX     GCONF_KEY_NOTIF_ROOT "notify-only-inbox"
 #define GCONF_KEY_ENABLED_DBUS          GCONF_KEY_NOTIF_ROOT "dbus-enabled"
 #define GCONF_KEY_ENABLED_STATUS        GCONF_KEY_NOTIF_ROOT "status-enabled"
@@ -97,6 +98,7 @@
 #define TRAY_SCHEMA			"org.gnome.evolution.plugin.evolution-tray"
 #define CONF_KEY_HIDDEN_ON_STARTUP	"hidden-on-startup"
 #define CONF_KEY_HIDE_ON_MINIMIZE	"hide-on-minimize"
+#define CONF_KEY_HIDE_ON_CLOSE	"hide-on-close"
 #define CONF_KEY_NOTIFY_ONLY_INBOX	"notify-only-inbox"
 #define CONF_KEY_ENABLED_DBUS		"notify-dbus-enabled"
 #define CONF_KEY_ENABLED_STATUS		"notify-status-enabled"
@@ -227,6 +229,18 @@ toggled_hidde_on_minimize_cb (GtkWidget *widget, gpointer data)
 	set_part_enabled (TRAY_SCHEMA, CONF_KEY_HIDE_ON_MINIMIZE,
 #endif
 		gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget)));
+}
+
+static void
+toggle_hidden_on_close_cb (GtkWidget *widget, gpointer data)
+{
+	g_return_if_fail (widget != NULL);
+#if EVOLUTION_VERSION < 30304
+	set_part_enabled (GCONF_KEY_HIDE_ON_CLOSE,
+#else
+	set_part_enabled (TRAY_SCHEMA, CONF_KEY_HIDE_ON_CLOSE,
+#endif
+	gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget)));
 }
 
 #if EVOLUTION_VERSION < 30304
@@ -721,9 +735,9 @@ get_cfg_widget (void)
 
 	vbox = gtk_vbox_new (FALSE, 6);
 	gtk_widget_show (vbox);
-	
+
 	container = vbox;
-	
+
 	check = gtk_check_button_new_with_mnemonic (_("Hidden on startup"));
 
 	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check),
@@ -750,6 +764,21 @@ get_cfg_widget (void)
 	g_signal_connect (G_OBJECT (check),
 		"toggled",
 		G_CALLBACK (toggled_hidde_on_minimize_cb), NULL);
+	gtk_widget_show (check);
+	gtk_box_pack_start (GTK_BOX (container), check, FALSE, FALSE, 0);
+
+	// CLOSE
+	check = gtk_check_button_new_with_mnemonic (_("Hide on close"));
+
+	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check),
+#if EVOLUTION_VERSION < 30304
+		is_part_enabled (GCONF_KEY_HIDE_ON_CLOSE));
+#else
+		is_part_enabled (TRAY_SCHEMA, CONF_KEY_HIDE_ON_CLOSE));
+#endif
+	g_signal_connect (G_OBJECT (check),
+		"toggled",
+		G_CALLBACK (toggle_hidden_on_close_cb), NULL);
 	gtk_widget_show (check);
 	gtk_box_pack_start (GTK_BOX (container), check, FALSE, FALSE, 0);
 
@@ -1404,6 +1433,24 @@ static gboolean window_state_event (GtkWidget *widget, GdkEventWindowState *even
 }
 
 gboolean
+on_quit_requested(
+	EShell *shell,
+	EShellQuitReason reason,
+	gpointer user_data)
+{
+#if EVOLUTION_VERSION < 30304
+	if(is_part_enabled (GCONF_KEY_HIDE_ON_CLOSE)
+#else
+	if(is_part_enabled (TRAY_SCHEMA, CONF_KEY_HIDE_ON_CLOSE)
+#endif
+	&& (reason == E_SHELL_QUIT_LAST_WINDOW)) {
+			e_shell_cancel_quit(e_shell_get_default());
+			toggle_window();
+		}
+	return TRUE;
+}
+
+gboolean
 e_plugin_ui_init (
 	GtkUIManager *ui_manager,
 	EShellView *shell_view)
@@ -1424,6 +1471,10 @@ e_plugin_ui_init (
 		"window-state-event",
 		G_CALLBACK (window_state_event), NULL);
 
+	g_signal_connect(G_OBJECT (e_shell_get_default()),
+		"quit-requested",
+		G_CALLBACK (on_quit_requested), NULL);
+
 	return TRUE;
 }
 #endif
@@ -1433,4 +1484,3 @@ e_plugin_lib_get_configure_widget (EPlugin *epl)
 {
 	return get_cfg_widget ();
 }
-
