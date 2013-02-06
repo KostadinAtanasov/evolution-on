@@ -37,7 +37,13 @@
 #endif
 #endif
 
+#if EVOLUTION_VERSION < 30704
 #include <e-util/e-config.h>
+#include <e-util/e-plugin.h>
+#include <e-util/e-icon-factory.h>
+#else
+#include <e-util/e-util.h>
+#endif
 
 #if EVOLUTION_VERSION < 22900
 #include <mail/em-popup.h>
@@ -66,7 +72,6 @@
 #else
 #include <mail/mail-ops.h>
 #endif
-#include <e-util/e-plugin.h>
 
 #include <mail/em-event.h>
 #include <mail/em-folder-tree.h>
@@ -75,7 +80,6 @@
 #include <mail/e-mail-reader.h>
 #endif
 
-#include <e-util/e-icon-factory.h>
 #include <shell/es-event.h>
 
 #ifdef HAVE_LIBNOTIFY
