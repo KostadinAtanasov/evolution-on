@@ -1125,15 +1125,13 @@ new_notify_status (EMEventTargetFolder *t)
 #endif
 		(GDestroyNotify) g_free);
 
-	if (!status_count) {
 #if EVOLUTION_VERSION > 30501
 		ESource *source = NULL;
 		ESourceRegistry *registry;
-		const *name;
+		const gchar *name;
 #else
 		EAccount *account;
 #endif
-		gchar *folder_name;
 #if EVOLUTION_VERSION >= 30102
 		const gchar *uid;
 		gchar *aname = t->display_name;
@@ -1232,13 +1230,6 @@ new_notify_status (EMEventTargetFolder *t)
 			msg = tmp;
 		}
 #endif
-	} else {
-		status_count += t->new;
-		msg = g_strdup_printf (ngettext (
-			"You have received %d new message.",
-			"You have received %d new messages.",
-			status_count), status_count);
-	}
 
 #if GTK_CHECK_VERSION (2,16,0)
 	gtk_status_icon_set_tooltip_text (tray_icon, msg);
@@ -1259,35 +1250,31 @@ new_notify_status (EMEventTargetFolder *t)
 		gchar *safetext;
 
 		safetext = g_markup_escape_text (msg, strlen (msg));
-		if (notify) {
-			notify_notification_update (
-				notify, _("New email"),
-				safetext, "mail-unread");
-		} else {
-			if (!notify_init ("evolution-mail-notification"))
-				fprintf (stderr,"notify init error");
+		//don't let the notification pile-up on the notification tray
+		notify_notification_close(notify, NULL);
+		if (!notify_init ("evolution-mail-notification"))
+			fprintf (stderr,"notify init error");
 
-			notify  = notify_notification_new (
-				_("New email"), safetext,
+		notify  = notify_notification_new (
+			_("New email"), safetext,
 #if LIBNOTIFY_VERSION < 7000
-				"mail-unread", NULL);
+			"mail-unread", NULL);
 #else
-				"mail-unread");
+			"mail-unread");
 #endif
 #if LIBNOTIFY_VERSION < 7000
-			notify_notification_attach_to_status_icon (
-				notify, tray_icon);
+		notify_notification_attach_to_status_icon (
+			notify, tray_icon);
 #endif
 
-			/* Check if actions are supported */
-			if (can_support_actions ()) {
-				notify_notification_set_urgency (
-					notify, NOTIFY_URGENCY_NORMAL);
-				notify_notification_set_timeout (
-					notify, NOTIFY_EXPIRES_DEFAULT);
-				g_timeout_add (
-					500, notification_callback, notify);
-			}
+		/* Check if actions are supported */
+		if (can_support_actions ()) {
+			notify_notification_set_urgency (
+				notify, NOTIFY_URGENCY_NORMAL);
+			notify_notification_set_timeout (
+				notify, NOTIFY_EXPIRES_DEFAULT);
+			g_timeout_add (
+				500, notification_callback, notify);
 		}
 		g_free (safetext);
 	}
