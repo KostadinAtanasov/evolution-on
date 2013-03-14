@@ -442,7 +442,11 @@ get_config_widget_sound (void)
 
 	scw = g_malloc0 (sizeof (struct _SoundConfigureWidgets));
 
+#if GTK_MAJOR_VERSION < 3
 	vbox = gtk_vbox_new (FALSE, 6);
+#else
+	vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
+#endif
 	gtk_widget_show (vbox);
 
 	container = vbox;
@@ -487,7 +491,11 @@ get_config_widget_sound (void)
 
 	container = widget;
 
+#if GTK_MAJOR_VERSION < 3
 	widget = gtk_vbox_new (FALSE, 6);
+#else
+	widget = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
+#endif
 	gtk_container_add (GTK_CONTAINER (container), widget);
 	gtk_widget_show (widget);
 
@@ -531,7 +539,11 @@ get_config_widget_sound (void)
 
 	group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (widget));
 
+#if GTK_MAJOR_VERSION < 3
 	widget = gtk_hbox_new (FALSE, 6);
+#else
+	widget = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
+#endif
 	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
 	gtk_widget_show (widget);
 
@@ -619,7 +631,11 @@ get_original_cfg_widget (void)
 	settings = g_settings_new ("org.gnome.evolution.plugin.mail-notification");
 #endif
 
+#if GTK_MAJOR_VERSION < 3
 	widget = gtk_vbox_new (FALSE, 12);
+#else
+	widget = gtk_box_new (GTK_ORIENTATION_VERTICAL, 12);
+#endif
 	gtk_widget_show (widget);
 
 	container = widget;
@@ -669,7 +685,11 @@ get_cfg_widget (void)
 {
 	GtkWidget *container, *vbox, *check;
 
+#if GTK_MAJOR_VERSION < 3
 	vbox = gtk_vbox_new (FALSE, 6);
+#else
+	vbox = gtk_box_new (FALSE, 6);
+#endif
 	gtk_widget_show (vbox);
 	
 	container = vbox;
@@ -879,7 +899,11 @@ do_properties (GtkMenuItem *item, gpointer user_data)
 		"<span size=\"x-large\">%s</span>",
 		_("Evolution Tray"));
 
+#if GTK_MAJOR_VERSION < 3
 	vbox = gtk_vbox_new (FALSE, 10);
+#else
+	vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 10);
+#endif
 	label = gtk_label_new (NULL);
 	gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
 	gtk_label_set_use_markup (GTK_LABEL (label), TRUE);
@@ -890,7 +914,11 @@ do_properties (GtkMenuItem *item, gpointer user_data)
 	gtk_widget_show (label);
 	gtk_widget_show (vbox);
 
+#if GTK_MAJOR_VERSION < 3
 	hbox = gtk_hbox_new (FALSE, 10);
+#else
+	hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 10);
+#endif
 	label = gtk_label_new ("   ");
 	gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
 	gtk_widget_show_all (hbox);
