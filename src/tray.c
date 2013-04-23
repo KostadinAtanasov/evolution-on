@@ -1,5 +1,5 @@
 /*  Evoution Tray Icon Plugin
- *  Copyright (C) 2008-2010 Lucian Langa <cooly@gnome.eu.org>
+ *  Copyright (C) 2008-2012 Lucian Langa <cooly@gnome.eu.org>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -37,7 +37,13 @@
 #endif
 #endif
 
+#if EVOLUTION_VERSION < 30704
 #include <e-util/e-config.h>
+#include <e-util/e-plugin.h>
+#include <e-util/e-icon-factory.h>
+#else
+#include <e-util/e-util.h>
+#endif
 
 #if EVOLUTION_VERSION < 22900
 #include <mail/em-popup.h>
@@ -66,7 +72,6 @@
 #else
 #include <mail/mail-ops.h>
 #endif
-#include <e-util/e-plugin.h>
 
 #include <mail/em-event.h>
 #include <mail/em-folder-tree.h>
@@ -75,7 +80,6 @@
 #include <mail/e-mail-reader.h>
 #endif
 
-#include <e-util/e-icon-factory.h>
 #include <shell/es-event.h>
 
 #ifdef HAVE_LIBNOTIFY
@@ -392,9 +396,6 @@ sound_notify_idle_cb (gpointer user_data)
 static GtkWidget *
 get_config_widget_status (void)
 {
-	GtkWidget *vbox;
-	GtkWidget *master;
-	GtkWidget *container;
 	GtkWidget *widget;
 #if EVOLUTION_VERSION < 30304
 	GConfBridge *bridge;
@@ -409,60 +410,9 @@ get_config_widget_status (void)
 	settings = g_settings_new ("org.gnome.evolution.plugin.mail-notification");
 #endif
 
-	vbox = gtk_vbox_new (FALSE, 6);
-	gtk_widget_show (vbox);
-
-	container = vbox;
-
-	text = _("Show icon in _notification area");
-	widget = gtk_check_button_new_with_mnemonic (text);
-	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
-	gtk_widget_show (widget);
-
-#if EVOLUTION_VERSION < 30304
-	gconf_bridge_bind_property (
-		bridge, GCONF_KEY_ENABLED_STATUS,
-		G_OBJECT (widget), "active");
-#else
-	g_settings_bind (settings, CONF_KEY_ENABLED_STATUS,
-		G_OBJECT (widget),
-		"active", G_SETTINGS_BIND_DEFAULT);
-#endif
-
-	master = widget;
-
-	widget = gtk_alignment_new (0.0, 0.0, 1.0, 1.0);
-	gtk_alignment_set_padding (GTK_ALIGNMENT (widget), 0, 0, 12, 0);
-	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
-	gtk_widget_show (widget);
-
-#if EVOLUTION_VERSION >= 29101
-	g_object_bind_property (
-		master, "active",
-		widget, "sensitive",
-		G_BINDING_SYNC_CREATE);
-#else
-#if EVOLUTION_VERSION >= 22502
-	e_binding_new (
-		master, "active",
-		widget, "sensitive");
-#else
-	g_warning("add missing properties binding for 2.24\n");
-#endif
-#endif
-
-	container = widget;
-
-	widget = gtk_vbox_new (FALSE, 6);
-	gtk_container_add (GTK_CONTAINER (container), widget);
-	gtk_widget_show (widget);
-
-	container = widget;
-
 #ifdef HAVE_LIBNOTIFY
 	text = _("Popup _message together with the icon");
 	widget = gtk_check_button_new_with_mnemonic (text);
-	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
 	gtk_widget_show (widget);
 
 #if EVOLUTION_VERSION < 30304
@@ -476,7 +426,7 @@ get_config_widget_status (void)
 #endif
 #endif
 
-	return vbox;
+	return widget;
 }
 
 
@@ -506,7 +456,11 @@ get_config_widget_sound (void)
 
 	scw = g_malloc0 (sizeof (struct _SoundConfigureWidgets));
 
+#if GTK_MAJOR_VERSION < 3
 	vbox = gtk_vbox_new (FALSE, 6);
+#else
+	vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
+#endif
 	gtk_widget_show (vbox);
 
 	container = vbox;
@@ -551,7 +505,11 @@ get_config_widget_sound (void)
 
 	container = widget;
 
+#if GTK_MAJOR_VERSION < 3
 	widget = gtk_vbox_new (FALSE, 6);
+#else
+	widget = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
+#endif
 	gtk_container_add (GTK_CONTAINER (container), widget);
 	gtk_widget_show (widget);
 
@@ -595,7 +553,11 @@ get_config_widget_sound (void)
 
 	group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (widget));
 
+#if GTK_MAJOR_VERSION < 3
 	widget = gtk_hbox_new (FALSE, 6);
+#else
+	widget = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
+#endif
 	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
 	gtk_widget_show (widget);
 
@@ -683,7 +645,11 @@ get_original_cfg_widget (void)
 	settings = g_settings_new ("org.gnome.evolution.plugin.mail-notification");
 #endif
 
+#if GTK_MAJOR_VERSION < 3
 	widget = gtk_vbox_new (FALSE, 12);
+#else
+	widget = gtk_box_new (GTK_ORIENTATION_VERTICAL, 12);
+#endif
 	gtk_widget_show (widget);
 
 	container = widget;
@@ -733,7 +699,11 @@ get_cfg_widget (void)
 {
 	GtkWidget *container, *vbox, *check;
 
+#if GTK_MAJOR_VERSION < 3
 	vbox = gtk_vbox_new (FALSE, 6);
+#else
+	vbox = gtk_box_new (FALSE, 6);
+#endif
 	gtk_widget_show (vbox);
 
 	container = vbox;
@@ -847,7 +817,7 @@ toggle_window (void)
 		}
 	}
 #else
-	if (gtk_widget_get_visible(evo_window)) {
+	if (gtk_widget_get_visible(GTK_WIDGET(evo_window))) {
 		gtk_widget_hide(GTK_WIDGET(evo_window));
 		winstatus = TRUE;
 	} else {
@@ -958,7 +928,11 @@ do_properties (GtkMenuItem *item, gpointer user_data)
 		"<span size=\"x-large\">%s</span>",
 		_("Evolution Tray"));
 
+#if GTK_MAJOR_VERSION < 3
 	vbox = gtk_vbox_new (FALSE, 10);
+#else
+	vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 10);
+#endif
 	label = gtk_label_new (NULL);
 	gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
 	gtk_label_set_use_markup (GTK_LABEL (label), TRUE);
@@ -969,7 +943,11 @@ do_properties (GtkMenuItem *item, gpointer user_data)
 	gtk_widget_show (label);
 	gtk_widget_show (vbox);
 
+#if GTK_MAJOR_VERSION < 3
 	hbox = gtk_hbox_new (FALSE, 10);
+#else
+	hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 10);
+#endif
 	label = gtk_label_new ("   ");
 	gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
 	gtk_widget_show_all (hbox);
@@ -1176,15 +1154,13 @@ new_notify_status (EMEventTargetFolder *t)
 #endif
 		(GDestroyNotify) g_free);
 
-	if (!status_count) {
 #if EVOLUTION_VERSION > 30501
 		ESource *source = NULL;
 		ESourceRegistry *registry;
-		const *name;
+		const gchar *name;
 #else
 		EAccount *account;
 #endif
-		gchar *folder_name;
 #if EVOLUTION_VERSION >= 30102
 		const gchar *uid;
 		gchar *aname = t->display_name;
@@ -1283,13 +1259,6 @@ new_notify_status (EMEventTargetFolder *t)
 			msg = tmp;
 		}
 #endif
-	} else {
-		status_count += t->new;
-		msg = g_strdup_printf (ngettext (
-			"You have received %d new message.",
-			"You have received %d new messages.",
-			status_count), status_count);
-	}
 
 #if GTK_CHECK_VERSION (2,16,0)
 	gtk_status_icon_set_tooltip_text (tray_icon, msg);
@@ -1303,44 +1272,38 @@ new_notify_status (EMEventTargetFolder *t)
 #ifdef HAVE_LIBNOTIFY
 	/* Now check whether we're supposed to send notifications */
 #if EVOLUTION_VERSION < 30304
-	if (is_part_enabled (NOTIF_SCHEMA, CONF_KEY_ENABLED_STATUS)
-	&& is_part_enabled (GCONF_KEY_STATUS_NOTIFICATION)) {
+	if (is_part_enabled (GCONF_KEY_STATUS_NOTIFICATION)) {
 #else
-	if (is_part_enabled (NOTIF_SCHEMA, CONF_KEY_ENABLED_STATUS)
-	&& is_part_enabled (NOTIF_SCHEMA, CONF_KEY_STATUS_NOTIFICATION)) {
+	if (is_part_enabled (NOTIF_SCHEMA, CONF_KEY_STATUS_NOTIFICATION)) {
 #endif
 		gchar *safetext;
 
 		safetext = g_markup_escape_text (msg, strlen (msg));
-		if (notify) {
-			notify_notification_update (
-				notify, _("New email"),
-				safetext, "mail-unread");
-		} else {
-			if (!notify_init ("evolution-mail-notification"))
-				fprintf (stderr,"notify init error");
+		//don't let the notification pile-up on the notification tray
+		notify_notification_close(notify, NULL);
+		if (!notify_init ("evolution-mail-notification"))
+			fprintf (stderr,"notify init error");
 
-			notify  = notify_notification_new (
-				_("New email"), safetext,
+		notify  = notify_notification_new (
+			_("New email"), safetext,
 #if LIBNOTIFY_VERSION < 7000
-				"mail-unread", NULL);
+			"mail-unread", NULL);
 #else
-				"mail-unread");
+			"mail-unread");
 #endif
 #if LIBNOTIFY_VERSION < 7000
-			notify_notification_attach_to_status_icon (
-				notify, tray_icon);
+		notify_notification_attach_to_status_icon (
+			notify, tray_icon);
 #endif
 
-			/* Check if actions are supported */
-			if (can_support_actions ()) {
-				notify_notification_set_urgency (
-					notify, NOTIFY_URGENCY_NORMAL);
-				notify_notification_set_timeout (
-					notify, NOTIFY_EXPIRES_DEFAULT);
-				g_timeout_add (
-					500, notification_callback, notify);
-			}
+		/* Check if actions are supported */
+		if (can_support_actions ()) {
+			notify_notification_set_urgency (
+				notify, NOTIFY_URGENCY_NORMAL);
+			notify_notification_set_timeout (
+				notify, NOTIFY_EXPIRES_DEFAULT);
+			g_timeout_add (
+				500, notification_callback, notify);
 		}
 		g_free (safetext);
 	}
