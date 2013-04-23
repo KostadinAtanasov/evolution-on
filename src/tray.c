@@ -149,6 +149,12 @@ static void popup_menu_status (GtkStatusIcon *status_icon,
 	guint button, guint activate_time, gpointer user_data);
 static void status_icon_activate_cb (void);
 
+gboolean
+on_quit_requested(
+	EShell *shell,
+	EShellQuitReason reason,
+	gpointer user_data);
+
 /****************** Configuration *************************/
 
 
@@ -1346,6 +1352,9 @@ org_gnome_evolution_tray_startup(
 #endif
 {
 	g_print("Evolution-tray plugin enabled.\n");
+	g_signal_connect(G_OBJECT (e_shell_get_default()),
+		"quit-requested",
+		G_CALLBACK (on_quit_requested), NULL);
 	create_status_icon();
 }
 
