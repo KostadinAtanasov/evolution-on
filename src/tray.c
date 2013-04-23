@@ -817,6 +817,13 @@ toggle_window (void)
 		}
 	}
 #else
+	#if EVOLUTION_VERSION > 30704
+	if (!evo_window) {
+		GtkWindow *win = e_shell_get_active_window(e_shell_get_default());
+		evo_window = (EShellWindow*)win;
+	}
+	#endif
+
 	if (gtk_widget_get_visible(GTK_WIDGET(evo_window))) {
 		gtk_widget_hide(GTK_WIDGET(evo_window));
 		winstatus = TRUE;
