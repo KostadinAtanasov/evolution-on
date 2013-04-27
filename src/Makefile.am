@@ -25,30 +25,30 @@ INCLUDES =                                              	\
 
 plugindir = $(PLUGIN_INSTALL_DIR)
 plugin_DATA = 					\
-		org-gnome-evolution-tray.eplug
+		org-gnome-evolution-on.eplug
 
-plugin_LTLIBRARIES = liborg-gnome-evolution-tray.la
+plugin_LTLIBRARIES = liborg-gnome-evolution-on.la
 
-liborg_gnome_evolution_tray_la_SOURCES = tray.c
-liborg_gnome_evolution_tray_la_LIBADD = $(LIBGCONFBRIDGE_LIBS) $(LIBNOTIFY_LIBS)
-liborg_gnome_evolution_tray_la_LDFLAGS = -module -avoid-version -rpath $(PLUGIN_INSTALL_DIR)
+liborg_gnome_evolution_on_la_SOURCES = tray.c
+liborg_gnome_evolution_on_la_LIBADD = $(LIBGCONFBRIDGE_LIBS) $(LIBNOTIFY_LIBS)
+liborg_gnome_evolution_on_la_LDFLAGS = -module -avoid-version -rpath $(PLUGIN_INSTALL_DIR)
 
 gsettings_SCHEMAS =                            \
-	org.gnome.evolution.plugin.evolution-tray.gschema.xml
+	org.gnome.evolution.plugin.evolution-on.gschema.xml
 
 @INTLTOOL_XML_NOMERGE_RULE@
 
 @GSETTINGS_RULES@
 
 convertdir = $(datadir)/GConf/gsettings
-convert_DATA = evolution-tray.convert
+convert_DATA = evolution-on.convert
 
-EXTRA_DIST = 	org-gnome-evolution-tray.eplug.xml	\
+EXTRA_DIST = 	org-gnome-evolution-on.eplug.xml	\
 		$(convert_DATA)                         \
 		$(gsettings_SCHEMAS:.xml=.xml.in)
 
 
-BUILT_SOURCES = org-gnome-evolution-tray.eplug
+BUILT_SOURCES = org-gnome-evolution-on.eplug
 
 CLEANFILES = $(BUILT_SOURCES)
 

@@ -87,7 +87,7 @@
 #endif
 
 #define GCONF_KEY_NOTIF_ROOT                 "/apps/evolution/eplugin/mail-notification/"
-#define GCONF_KEY_TRAY_ROOT                 "/apps/evolution/eplugin/evolution-tray/"
+#define GCONF_KEY_TRAY_ROOT                 "/apps/evolution/eplugin/evolution-on/"
 #if EVOLUTION_VERSION < 30304
 #define GCONF_KEY_HIDDEN_ON_STARTUP	GCONF_KEY_TRAY_ROOT "hidden-on-startup"
 #define GCONF_KEY_HIDE_ON_MINIMIZE	GCONF_KEY_TRAY_ROOT "hide-on-minimize"
@@ -99,7 +99,7 @@
 #define GCONF_KEY_STATUS_NOTIFICATION	GCONF_KEY_NOTIF_ROOT "status-notification"
 #else
 #define NOTIF_SCHEMA			"org.gnome.evolution.plugin.mail-notification"
-#define TRAY_SCHEMA			"org.gnome.evolution.plugin.evolution-tray"
+#define TRAY_SCHEMA			"org.gnome.evolution.plugin.evolution-on"
 #define CONF_KEY_HIDDEN_ON_STARTUP	"hidden-on-startup"
 #define CONF_KEY_HIDE_ON_MINIMIZE	"hide-on-minimize"
 #define CONF_KEY_HIDE_ON_CLOSE	"hide-on-close"
@@ -1351,7 +1351,7 @@ org_gnome_evolution_tray_startup(
 		ESEventTargetUpgrade *t)
 #endif
 {
-	g_print("Evolution-tray plugin enabled.\n");
+	g_print("Evolution-on plugin enabled.\n");
 	g_signal_connect(G_OBJECT (e_shell_get_default()),
 		"quit-requested",
 		G_CALLBACK (on_quit_requested), NULL);

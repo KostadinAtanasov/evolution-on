@@ -6,7 +6,7 @@ test -z "$srcdir" && srcdir=.
 
 REQUIRED_AUTOMAKE_VERSION=1.8
 
-PKG_NAME="evolution-tray"
+PKG_NAME="evolution-on"
 
 (test -f $srcdir/configure.ac \
   && test -f $srcdir/README \

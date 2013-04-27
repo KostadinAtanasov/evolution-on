@@ -1,0 +1,8 @@
+[org.gnome.evolution]
+version = /apps/evolution/version
+last-upgraded-version = /apps/evolution/last_version
+
+[org.gnome.evolution.plugin.evolution-on]
+hidden-on-startup = /apps/evolution/plugin/evolution-on/hidden-on-startup
+hide-on-minimize = /apps/evolution/plugin/evolution-on/hide-on-minimize
+hide-on-close = /apps/evolution/plugin/evolution-on/hide-on-close

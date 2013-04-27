@@ -1,4 +1,4 @@
-AC_INIT([evolution-tray], [0.1.0], [http://bugzilla.gnome.eu.org/enter_bug.cgi?product=evolution-tray])
+AC_INIT([evolution-on], [0.1.0], [http://bugzilla.gnome.eu.org/enter_bug.cgi?product=evolution-on])
 AC_CONFIG_SRCDIR(src)
 
 AM_INIT_AUTOMAKE
@@ -104,7 +104,7 @@ AM_GCONF_SOURCE_2
 dnl Internationalisation stuff
 ALL_LINGUAS="en"
 
-GETTEXT_PACKAGE=evolution-tray
+GETTEXT_PACKAGE=evolution-on
 AC_SUBST(GETTEXT_PACKAGE)
 AM_GLIB_GNU_GETTEXT
 AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,"$GETTEXT_PACKAGE", [definition of GETTEXT_PACKAGE])
@@ -122,7 +122,7 @@ src/Makefile
 AC_OUTPUT
 
 echo ""
-echo "Evolution tray plugin successfully configured"
+echo "Evolution on plugin successfully configured"
 echo ""
 echo "    Installation path: $PLUGIN_INSTALL_DIR"
 echo ""

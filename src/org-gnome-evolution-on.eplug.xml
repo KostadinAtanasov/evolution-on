@@ -2,8 +2,8 @@
 <e-plugin-list>
 <e-plugin
 	type="shlib"
-	id="org.gnome.evolution.plugin.tray"
-	location="+PLUGIN_INSTALL_DIR+/liborg-gnome-evolution-tray.so"
+	id="org.gnome.evolution.plugin.evolution-on"
+	location="+PLUGIN_INSTALL_DIR+/liborg-gnome-evolution-on.so"
 	domain="+GETTEXT_PACKAGE+"
 	localedir="+LOCALEDIR+"
 	_name="Evolution Tray Icon">
