@@ -100,6 +100,11 @@ toggle_window()
 		gtkut_window_popup(GTK_WIDGET(on_icon.evo_window));
 		on_icon.winstatus = TRUE;
 	}
+
+	if (on_icon.winnotify) {
+		set_icon(&on_icon, FALSE, _(""));
+		on_icon.winnotify = FALSE;
+	}
 }
 
 #ifdef HAVE_LIBNOTIFY
@@ -285,14 +290,7 @@ new_notify_status(EMEventTargetFolder *t, struct OnIcon *_onicon)
 		msg = tmp;
 	}
 
-	/*
-	 * Drop it?
-	gtk_status_icon_set_tooltip_text(tray_icon, msg);
-
-	gtk_status_icon_set_from_pixbuf(tray_icon,
-			e_icon_factory_get_icon("mail-unread",
-					GTK_ICON_SIZE_SMALL_TOOLBAR));
-	*/
+	set_icon(_onicon, TRUE, msg);
 
 #ifdef HAVE_LIBNOTIFY
 	/* Now check whether we're supposed to send notifications */

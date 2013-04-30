@@ -70,6 +70,31 @@ static GtkMenu *
 create_popup_menu(struct OnIcon *_onicon);
 
 static void
+set_icon(struct OnIcon *_onicon, gboolean unread, const gchar *msg)
+{
+#ifdef HAVE_LIBAPPINDICATOR
+	if (unread) {
+		app_indicator_set_status(_onicon->appindicator,
+				APP_INDICATOR_STATUS_ATTENTION);
+	} else {
+		app_indicator_set_status(_onicon->appindicator,
+				APP_INDICATOR_STATUS_ACTIVE);
+	}
+#else /* !#ifdef HAVE_LIBAPPINDICATOR */
+	gtk_status_icon_set_tooltip_text(tray_icon, msg);
+	if (unread) {
+		gtk_status_icon_set_from_pixbuf(tray_icon,
+				e_icon_factory_get_icon("mail-unread",
+						GTK_ICON_SIZE_SMALL_TOOLBAR));
+	} else {
+		gtk_status_icon_set_from_pixbuf(tray_icon,
+				e_icon_factory_get_icon("mail-read",
+						GTK_ICON_SIZE_SMALL_TOOLBAR));
+	}
+#endif /* #ifdef HAVE_LIBAPPINDICATOR */
+}
+
+static void
 create_icon(struct OnIcon *_onicon,
 		do_properties_func _prop_func,
 		do_quit_func _quit_func,
