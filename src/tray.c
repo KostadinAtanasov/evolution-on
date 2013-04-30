@@ -1,4 +1,4 @@
-/*  Evoution Tray Icon Plugin
+/* Evoution On plugin
  *  Copyright (C) 2008-2012 Lucian Langa <cooly@gnome.eu.org>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -51,487 +51,32 @@
 #include <libnotify/notify.h>
 #endif
 
-#define GCONF_KEY_NOTIF_ROOT                 "/apps/evolution/eplugin/mail-notification/"
-#define GCONF_KEY_TRAY_ROOT                 "/apps/evolution/eplugin/evolution-on/"
-
-#define NOTIF_SCHEMA			"org.gnome.evolution.plugin.mail-notification"
-#define TRAY_SCHEMA			"org.gnome.evolution.plugin.evolution-on"
-#define CONF_KEY_HIDDEN_ON_STARTUP	"hidden-on-startup"
-#define CONF_KEY_HIDE_ON_MINIMIZE	"hide-on-minimize"
-#define CONF_KEY_HIDE_ON_CLOSE	"hide-on-close"
-#define CONF_KEY_NOTIFY_ONLY_INBOX	"notify-only-inbox"
-#define CONF_KEY_ENABLED_DBUS		"notify-dbus-enabled"
-#define CONF_KEY_ENABLED_STATUS		"notify-status-enabled"
-#define CONF_KEY_ENABLED_SOUND		"notify-sound-enabled"
-#define CONF_KEY_STATUS_NOTIFICATION	"notify-status-notification"
-
-static guint status_count = 0;
-static gboolean winstatus;
-static gboolean winnotify = FALSE;
+#include "on_properties.h"
+#include "on_icon.h"
 
 static gulong shown_first_time_handle = 0;
-
-#ifdef HAVE_LIBNOTIFY
-static NotifyNotification *notify = NULL;
-#endif
-
-EShellWindow *evo_window;
-GtkStatusIcon *tray_icon = NULL;
-
-static void remove_notification (void);
-static void popup_menu_status (GtkStatusIcon *status_icon,
-	guint button, guint activate_time, gpointer user_data);
-static void status_icon_activate_cb (void);
+struct OnIcon on_icon = ONICON_NEW;
 
 gboolean
-on_quit_requested(
-	EShell *shell,
-	EShellQuitReason reason,
-	gpointer user_data);
+on_quit_requested(EShell *shell, EShellQuitReason reason, gpointer user_data);
 
-/****************** Configuration *************************/
-
-
-//Query GConf
-static gboolean
-is_part_enabled (gchar *schema, const gchar *key)
-{
-	/* the part is not enabled by default */
-	gboolean res = FALSE;
-
-	GSettings *settings;
-
-	settings = g_settings_new (schema);
-
-	res = g_settings_get_boolean (settings, key);
-	g_object_unref (settings);
-
-	return res;
-}
-
-static void
-set_part_enabled (gchar *schema, const gchar *key, gboolean enable)
-{
-	GSettings *settings = g_settings_new (schema);
-	g_settings_set_boolean (settings, key, enable);
-	g_object_unref (settings);
-}
-
-//Callback for Configuration Widget
-static void
-toggled_hidden_on_startup_cb (GtkWidget *widget, gpointer data)
-{
-	g_return_if_fail (widget != NULL);
-	set_part_enabled (TRAY_SCHEMA, CONF_KEY_HIDDEN_ON_STARTUP,
-		gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget)));
-}
-
-static void
-toggled_hidde_on_minimize_cb (GtkWidget *widget, gpointer data)
-{
-	g_return_if_fail (widget != NULL);
-	set_part_enabled (TRAY_SCHEMA, CONF_KEY_HIDE_ON_MINIMIZE,
-		gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget)));
-}
-
-static void
-toggle_hidden_on_close_cb (GtkWidget *widget, gpointer data)
-{
-	g_return_if_fail (widget != NULL);
-	set_part_enabled (TRAY_SCHEMA, CONF_KEY_HIDE_ON_CLOSE,
-	gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget)));
-}
-
-#define CONF_KEY_SOUND_BEEP		"notify-sound-beep"
-#define CONF_KEY_SOUND_USE_THEME	"notify-sound-use-theme"
-#define CONF_KEY_SOUND_PLAY_FILE	"notify-sound-play-file"
-#define CONF_KEY_SOUND_FILE		"notify-sound-file"
-
-static void
-do_play_sound (gboolean beep, gboolean use_theme, const gchar *file)
-{
-	if (!beep) {
-#ifdef HAVE_CANBERRA
-		if (!use_theme && file && *file)
-			ca_context_play (mailnotification, 0,
-			CA_PROP_MEDIA_FILENAME, file,
-			NULL);
-		else
-			ca_context_play (mailnotification, 0,
-			CA_PROP_EVENT_ID,"message-new-email",
-			NULL);
-#endif
-	} else
-		gdk_beep ();
-}
-
-struct _SoundConfigureWidgets
-{
-	GtkWidget *enable;
-	GtkWidget *beep;
-	GtkWidget *use_theme;
-	GtkWidget *file;
-	GtkWidget *filechooser;
-	GtkWidget *play;
-};
-
-static void
-sound_file_set_cb (GtkWidget *widget, gpointer data)
-{
-	gchar *file;
-	GSettings *settings;
-
-	g_return_if_fail (widget != NULL);
-
-	settings = g_settings_new ("org.gnome.evolution.plugin.mail-notification");
-
-	file = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (widget));
-
-	g_settings_set_string (settings, CONF_KEY_SOUND_FILE, file ? file : "");
-
-	g_object_unref (settings);
-
-	g_free (file);
-}
-
-static void
-sound_play_cb (GtkWidget *widget, gpointer data)
-{
-	struct _SoundConfigureWidgets *scw = (struct _SoundConfigureWidgets *) data;
-	gchar *file;
-
-	g_return_if_fail (data != NULL);
-
-	if (!gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (scw->enable)))
-		return;
-
-	file = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (scw->filechooser));
-	do_play_sound (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (scw->beep)),
-			gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (scw->use_theme)),
-			file);
-	g_free (file);
-}
-
-struct _SoundNotifyData {
-	time_t last_notify;
-	guint notify_idle_id;
-};
-
-static gboolean
-sound_notify_idle_cb (gpointer user_data)
-{
-	gchar *file;
-
-	GSettings *settings;
-
-	struct _SoundNotifyData *data = (struct _SoundNotifyData *) user_data;
-
-	g_return_val_if_fail (data != NULL, FALSE);
-
-	settings = g_settings_new ("org.gnome.evolution.plugin.mail-notification");
-
-	file = g_settings_get_string (settings, CONF_KEY_SOUND_FILE);
-
-	do_play_sound (
-			is_part_enabled (NOTIF_SCHEMA, CONF_KEY_SOUND_BEEP),
-			is_part_enabled (NOTIF_SCHEMA, CONF_KEY_SOUND_USE_THEME),
-			file);
-
-	g_object_unref (settings);
-
-	g_free (file);
-
-	time (&data->last_notify);
-
-	data->notify_idle_id = 0;
-
-	return FALSE;
-}
-
-static GtkWidget *
-get_config_widget_status (void)
-{
-	GtkWidget *widget;
-	GSettings *settings;
-
-	const gchar *text;
-
-	settings = g_settings_new ("org.gnome.evolution.plugin.mail-notification");
-
-#ifdef HAVE_LIBNOTIFY
-	text = _("Popup _message together with the icon");
-	widget = gtk_check_button_new_with_mnemonic (text);
-	gtk_widget_show (widget);
-
-	g_settings_bind (settings, CONF_KEY_STATUS_NOTIFICATION,
-		G_OBJECT (widget),
-		"active", G_SETTINGS_BIND_DEFAULT);
-#endif
-
-	return widget;
-}
-
-
-static GtkWidget *
-get_config_widget_sound (void)
-{
-	GtkWidget *vbox;
-	GtkWidget *container;
-	GtkWidget *master;
-	GtkWidget *widget;
-	gchar *file;
-
-	GSettings *settings;
-
-	GSList *group = NULL;
-	struct _SoundConfigureWidgets *scw;
-	const gchar *text;
-
-	settings = g_settings_new ("org.gnome.evolution.plugin.mail-notification");
-
-	scw = g_malloc0 (sizeof (struct _SoundConfigureWidgets));
-
-	vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
-	gtk_widget_show (vbox);
-
-	container = vbox;
-
-	text = _("_Play sound when new messages arrive");
-	widget = gtk_check_button_new_with_mnemonic (text);
-	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
-	gtk_widget_show (widget);
-
-	g_settings_bind (settings, CONF_KEY_ENABLED_SOUND,
-		G_OBJECT (widget),
-		"active", G_SETTINGS_BIND_DEFAULT);
-
-	master = widget;
-	scw->enable = widget;
-
-	widget = gtk_alignment_new (0.0, 0.0, 1.0, 1.0);
-	gtk_alignment_set_padding (GTK_ALIGNMENT (widget), 0, 0, 12, 0);
-	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
-	gtk_widget_show (widget);
-
-	g_object_bind_property (
-		master, "active",
-		widget, "sensitive",
-		G_BINDING_SYNC_CREATE);
-
-	container = widget;
-
-	widget = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
-
-	gtk_container_add (GTK_CONTAINER (container), widget);
-	gtk_widget_show (widget);
-
-	container = widget;
-
-	text = _("_Beep");
-	widget = gtk_radio_button_new_with_mnemonic (group, text);
-	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
-	gtk_widget_show (widget);
-
-	g_settings_bind (settings, CONF_KEY_SOUND_BEEP,
-		G_OBJECT (widget),
-		"active", G_SETTINGS_BIND_DEFAULT);
-
-	scw->beep = widget;
-
-	group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (widget));
-
-	text = _("Use sound _theme");
-	widget = gtk_radio_button_new_with_mnemonic (group, text);
-	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
-	gtk_widget_show (widget);
-
-	g_settings_bind (settings, CONF_KEY_SOUND_USE_THEME,
-		G_OBJECT (widget),
-		"active", G_SETTINGS_BIND_DEFAULT);
-
-	scw->use_theme = widget;
-
-	group = gtk_radio_button_get_group (GTK_RADIO_BUTTON (widget));
-
-
-	widget = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
-
-	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
-	gtk_widget_show (widget);
-
-	container = widget;
-
-	text = _("Play _file:");
-	widget = gtk_radio_button_new_with_mnemonic (group, text);
-	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
-	gtk_widget_show (widget);
-
-	g_settings_bind (settings, CONF_KEY_SOUND_PLAY_FILE,
-		G_OBJECT (widget),
-		"active", G_SETTINGS_BIND_DEFAULT);
-
-	scw->file = widget;
-
-	text = _("Select sound file");
-	widget = gtk_file_chooser_button_new (
-		text, GTK_FILE_CHOOSER_ACTION_OPEN);
-	gtk_box_pack_start (GTK_BOX (container), widget, TRUE, TRUE, 0);
-	gtk_widget_show (widget);
-
-	scw->filechooser = widget;
-
-	widget = gtk_button_new ();
-	gtk_button_set_image (
-		GTK_BUTTON (widget), gtk_image_new_from_icon_name (
-		"media-playback-start", GTK_ICON_SIZE_BUTTON));
-	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
-	gtk_widget_show (widget);
-
-	scw->play = widget;
-
-	file = g_settings_get_string(settings, CONF_KEY_SOUND_FILE);
-
-	if (file && *file)
-		gtk_file_chooser_set_filename (GTK_FILE_CHOOSER (scw->filechooser), file);
-
-	g_object_unref (settings);
-
-	g_free (file);
-
-	g_signal_connect (
-		scw->filechooser, "file-set",
-		G_CALLBACK (sound_file_set_cb), scw);
-	g_signal_connect (
-		scw->play, "clicked",
-		G_CALLBACK (sound_play_cb), scw);
-
-	/* to let structure free properly */
-	g_object_set_data_full (G_OBJECT (vbox), "scw-data", scw, g_free);
-
-	return vbox;
-}
-
-static GtkWidget *
-get_original_cfg_widget (void)
-{
-	GtkWidget *container;
-	GtkWidget *widget;
-
-	GSettings *settings;
-
-	const gchar *text;
-
-	settings = g_settings_new ("org.gnome.evolution.plugin.mail-notification");
-
-	widget = gtk_box_new (GTK_ORIENTATION_VERTICAL, 12);
-
-	gtk_widget_show (widget);
-
-	container = widget;
-
-	text = _("Notify new messages for _Inbox only");
-	widget = gtk_check_button_new_with_mnemonic (text);
-	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
-	gtk_widget_show (widget);
-
-	g_settings_bind (settings, CONF_KEY_NOTIFY_ONLY_INBOX,
-		G_OBJECT (widget),
-		"active", G_SETTINGS_BIND_DEFAULT);
-
-	text = _("Generate a _D-Bus message");
-	widget = gtk_check_button_new_with_mnemonic (text);
-	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
-	gtk_widget_show (widget);
-
-	g_settings_bind (settings, CONF_KEY_ENABLED_DBUS,
-		G_OBJECT (widget),
-		"active", G_SETTINGS_BIND_DEFAULT);
-
-	widget = get_config_widget_status ();
-	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
-
-	widget = get_config_widget_sound ();
-	gtk_box_pack_start (GTK_BOX (container), widget, FALSE, FALSE, 0);
-
-	return container;
-}
-
-//Configuration Widget
-static GtkWidget *
-get_cfg_widget (void)
-{
-	GtkWidget *container, *vbox, *check;
-
-	vbox = gtk_box_new (FALSE, 6);
-
-	gtk_widget_show (vbox);
-
-	container = vbox;
-
-	check = gtk_check_button_new_with_mnemonic (_("Hidden on startup"));
-
-	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check),
-
-		is_part_enabled (TRAY_SCHEMA, CONF_KEY_HIDDEN_ON_STARTUP));
-	g_signal_connect (G_OBJECT (check),
-		"toggled",
-		G_CALLBACK (toggled_hidden_on_startup_cb), NULL);
-	gtk_widget_show (check);
-	gtk_box_pack_start (GTK_BOX (container), check, FALSE, FALSE, 0);
-
-	// MINIMIZE
-	check = gtk_check_button_new_with_mnemonic (_("Hide on minimize"));
-
-	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check),
-
-		is_part_enabled (TRAY_SCHEMA, CONF_KEY_HIDE_ON_MINIMIZE));
-
-	g_signal_connect (G_OBJECT (check),
-		"toggled",
-		G_CALLBACK (toggled_hidde_on_minimize_cb), NULL);
-	gtk_widget_show (check);
-	gtk_box_pack_start (GTK_BOX (container), check, FALSE, FALSE, 0);
-
-	// CLOSE
-	check = gtk_check_button_new_with_mnemonic (_("Hide on close"));
-
-	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (check),
-
-		is_part_enabled (TRAY_SCHEMA, CONF_KEY_HIDE_ON_CLOSE));
-
-	g_signal_connect (G_OBJECT (check),
-		"toggled",
-		G_CALLBACK (toggle_hidden_on_close_cb), NULL);
-	gtk_widget_show (check);
-	gtk_box_pack_start (GTK_BOX (container), check, FALSE, FALSE, 0);
-
-	return container;
-}
-
-void gtkut_window_popup(GtkWidget *window)
+void
+gtkut_window_popup(GtkWidget *window)
 {
 	gint x, y, sx, sy, new_x, new_y;
 
 	g_return_if_fail(window != NULL);
-
 	g_return_if_fail(gtk_widget_get_window(window) != NULL);
 
 	sx = gdk_screen_width();
 	sy = gdk_screen_height();
-
 	gdk_window_get_origin(gtk_widget_get_window(window), &x, &y);
-
 	new_x = x % sx; if (new_x < 0) new_x = 0;
 	new_y = y % sy; if (new_y < 0) new_y = 0;
 	if (new_x != x || new_y != y) {
-
 		gdk_window_move(gtk_widget_get_window(window), new_x, new_y);
-
 	}
-
-	gtk_window_set_skip_taskbar_hint(
-		GTK_WINDOW(window),
-		FALSE);
+	gtk_window_set_skip_taskbar_hint(GTK_WINDOW(window), FALSE);
 	gtk_window_present(GTK_WINDOW(window));
 #ifdef G_OS_WIN32
 	/* ensure that the window is displayed at the top */
@@ -541,210 +86,92 @@ void gtkut_window_popup(GtkWidget *window)
 
 //helper method for toggling used on init for hidden on startup and on tray click
 static void
-toggle_window (void)
+toggle_window()
 {
-	if (!evo_window) {
-		GtkWindow *win = e_shell_get_active_window(e_shell_get_default());
-		evo_window = (EShellWindow*)win;
-	}
-
-	if (gtk_widget_get_visible(GTK_WIDGET(evo_window))) {
-		gtk_widget_hide(GTK_WIDGET(evo_window));
-		winstatus = TRUE;
+	if (gtk_widget_get_visible(GTK_WIDGET(on_icon.evo_window))) {
+		gtk_widget_hide(GTK_WIDGET(on_icon.evo_window));
+		on_icon.winstatus = FALSE;
 	} else {
-		gtk_widget_show(GTK_WIDGET(evo_window));
-		gtkut_window_popup(GTK_WIDGET(evo_window));
-		winstatus = FALSE;
+		gtk_widget_show(GTK_WIDGET(on_icon.evo_window));
+		gtkut_window_popup(GTK_WIDGET(on_icon.evo_window));
+		on_icon.winstatus = TRUE;
 	}
-}
-
-static void
-icon_activated (GtkStatusIcon *icon, gpointer pnotify)
-{
-	status_icon_activate_cb();
-	gtk_status_icon_set_from_pixbuf (
-		tray_icon,
-		e_icon_factory_get_icon (
-			"mail-read",
-			GTK_ICON_SIZE_SMALL_TOOLBAR));
-
-	gtk_status_icon_set_has_tooltip (tray_icon, FALSE);
-
-	winnotify = FALSE;
-}
-
-static gboolean
-button_press_cb (
-		GtkWidget *widget,
-		GdkEventButton *event,
-		gpointer data)
-{
-	if (event->button != 1 || event->type != GDK_2BUTTON_PRESS
-		&& winstatus != TRUE && winnotify == TRUE) {
-		gtk_window_present(GTK_WINDOW(evo_window));
-		return FALSE;
-	}
-	toggle_window();
-	icon_activated(NULL, NULL);
-	return TRUE;
-}
-
-static void
-create_status_icon(void)
-{
-	if (!tray_icon) {
-		tray_icon = gtk_status_icon_new ();
-		gtk_status_icon_set_from_pixbuf (
-			tray_icon,
-			e_icon_factory_get_icon (
-				"mail-read",
-				GTK_ICON_SIZE_SMALL_TOOLBAR));
-		g_signal_connect (
-			G_OBJECT (tray_icon),
-			"activate",
-			G_CALLBACK (icon_activated),
-			NULL);
-		g_signal_connect (
-			G_OBJECT (tray_icon),
-			"button-press-event",
-			G_CALLBACK (button_press_cb),
-			NULL);
-		g_signal_connect (
-			tray_icon, "popup-menu",
-			G_CALLBACK (popup_menu_status), tray_icon);
-	}
-	gtk_status_icon_set_visible (tray_icon, TRUE);
 }
 
 #ifdef HAVE_LIBNOTIFY
 static gboolean
-notification_callback (gpointer notify)
+notification_callback(gpointer data)
 {
-	return (!notify_notification_show (notify, NULL));
+	struct OnIcon *_onicon = (struct OnIcon*)data;
+	return !notify_notification_show(_onicon->notify, NULL);
 }
 #endif
 
 static void
-do_quit (GtkMenuItem *item, gpointer user_data)
+do_quit(GtkMenuItem *item, gpointer user_data)
 {
 	EShell *shell;
-	shell = e_shell_get_default ();
-	e_shell_quit (shell, E_SHELL_QUIT_ACTION);
+	shell = e_shell_get_default();
+	e_shell_quit(shell, E_SHELL_QUIT_ACTION);
 }
 
 static void
-do_properties (GtkMenuItem *item, gpointer user_data)
+do_properties(GtkMenuItem *item, gpointer user_data)
 {
 	GtkWidget *cfg, *ocfg, *dialog, *vbox, *label, *hbox;
 	GtkWidget *content_area;
 	gchar *text;
 
-	cfg = get_cfg_widget ();
+	cfg = get_cfg_widget();
 	if (!cfg)
 		return;
-	ocfg = get_original_cfg_widget ();
+	ocfg = get_original_cfg_widget();
 	if (!ocfg)
 		return;
 
-	text = g_markup_printf_escaped (
-		"<span size=\"x-large\">%s</span>",
-		_("Evolution Tray"));
+	text = g_markup_printf_escaped("<span size=\"x-large\">%s</span>",
+			_("Evolution On"));
 
-	vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 10);
-	label = gtk_label_new (NULL);
-	gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5);
-	gtk_label_set_use_markup (GTK_LABEL (label), TRUE);
-	gtk_label_set_markup (GTK_LABEL (label), text);
+	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+	label = gtk_label_new(NULL);
+	gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
+	gtk_label_set_use_markup(GTK_LABEL(label), TRUE);
+	gtk_label_set_markup(GTK_LABEL(label), text);
 	g_free (text);
 
-	gtk_box_pack_start (GTK_BOX (vbox), label, FALSE, FALSE, 0);
-	gtk_widget_show (label);
-	gtk_widget_show (vbox);
+	gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 0);
+	gtk_widget_show(label);
+	gtk_widget_show(vbox);
 
-	hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 10);
-	label = gtk_label_new ("   ");
-	gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
-	gtk_widget_show_all (hbox);
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+	label = gtk_label_new("   ");
+	gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 0);
+	gtk_widget_show_all(hbox);
 
-	gtk_box_pack_start (GTK_BOX (vbox), cfg, TRUE, TRUE, 0);
-	gtk_box_pack_start (GTK_BOX (vbox), ocfg, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX (vbox), cfg, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX (vbox), ocfg, TRUE, TRUE, 0);
 
-	dialog = gtk_dialog_new_with_buttons (
-		_("Mail Notification Properties"),
-		NULL,
-		GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-		GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE,
-		NULL);
+	dialog = gtk_dialog_new_with_buttons(_("Mail Notification Properties"),
+			NULL,
+			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+			GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE,
+			NULL);
 
-	content_area = gtk_dialog_get_content_area(GTK_DIALOG (dialog));
+	content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 
-	gtk_container_add (GTK_CONTAINER (content_area), vbox);
-	gtk_container_set_border_width (GTK_CONTAINER (vbox), 10);
-	gtk_widget_set_size_request (dialog, 400, -1);
-	g_signal_connect_swapped (
-		dialog, "response",
-		G_CALLBACK (gtk_widget_destroy), dialog);
-	gtk_widget_show (dialog);
+	gtk_container_add(GTK_CONTAINER(content_area), vbox);
+	gtk_container_set_border_width(GTK_CONTAINER (vbox), 10);
+	gtk_widget_set_size_request(dialog, 400, -1);
+	g_signal_connect_swapped(dialog, "response",
+			G_CALLBACK(gtk_widget_destroy), dialog);
+	gtk_widget_show(dialog);
 }
 
 static void
-remove_notification (void)
-{
-#ifdef HAVE_LIBNOTIFY
-	if (notify)
-		notify_notification_close (notify, NULL);
-
-	notify = NULL;
-#endif
-
-	status_count = 0;
-}
-
-static void
-shown_first_time_cb (GtkWidget *widget, gpointer user_data)
+shown_first_time_cb(GtkWidget *widget, gpointer user_data)
 {
 	g_signal_handler_disconnect(widget, shown_first_time_handle);
-	gtk_widget_hide(widget);
-}
-
-static void
-status_icon_activate_cb (void)
-{
-	EShell *shell;
-	EShellView *shell_view;
-	EShellWindow *shell_window;
-	EShellSidebar *shell_sidebar;
-	EMFolderTree *folder_tree;
-	GtkAction *action;
-	GList *list;
-	const gchar *uri;
-	GtkApplication *application;
-
-	shell = e_shell_get_default ();
-	application = GTK_APPLICATION(shell);
-	list = gtk_application_get_windows (application);
-
-	/* Find the first EShellWindow in the list. */
-	while (list != NULL && !E_IS_SHELL_WINDOW (list->data))
-		list = g_list_next (list);
-
-	g_return_if_fail (list != NULL);
-
-	/* Present the shell window. */
-	shell_window = E_SHELL_WINDOW (list->data);
-
-	/* Switch to the mail view. */
-	shell_view = e_shell_window_get_shell_view (shell_window, "mail");
-	action = e_shell_view_get_action (shell_view);
-	gtk_action_activate (action);
-
-	/* Select the latest folder with new mail. */
-	uri = g_object_get_data (G_OBJECT (tray_icon), "uri");
-	shell_sidebar = e_shell_view_get_shell_sidebar (shell_view);
-	g_object_get (shell_sidebar, "folder-tree", &folder_tree, NULL);
-	em_folder_tree_set_selected (folder_tree, uri, FALSE);
-
-	remove_notification ();
+	on_icon.toggle_window_func();
 }
 
 static GStaticMutex mlock = G_STATIC_MUTEX_INIT;
@@ -752,284 +179,210 @@ static GStaticMutex mlock = G_STATIC_MUTEX_INIT;
 #ifdef HAVE_LIBNOTIFY
 /* Function to check if actions are supported by the notification daemon */
 static gboolean
-can_support_actions (void)
+can_support_actions()
 {
 	static gboolean supports_actions = FALSE;
 	static gboolean have_checked = FALSE;
-
 	if (!have_checked) {
 		GList *caps = NULL;
 		GList *c;
-
 		have_checked = TRUE;
-
-		caps = notify_get_server_caps ();
+		caps = notify_get_server_caps();
 		if (caps != NULL) {
 			for (c = caps; c != NULL; c = c->next) {
-				if (strcmp ((gchar *)c->data, "actions") == 0) {
+				if (strcmp((gchar *)c->data, "actions") == 0) {
 					supports_actions = TRUE;
 					break;
 				}
 			}
 		}
 
-		g_list_foreach (caps, (GFunc)g_free, NULL);
-		g_list_free (caps);
+		g_list_foreach(caps, (GFunc)g_free, NULL);
+		g_list_free(caps);
 	}
-
 	return supports_actions;
 }
 #endif
 
 static void
-popup_menu_status (GtkStatusIcon *status_icon,
-		guint button,
-		guint activate_time,
-		gpointer user_data)
-{
-	GtkMenu *menu;
-	GtkWidget *item;
-
-	menu = GTK_MENU (gtk_menu_new ());
-
-	item = gtk_image_menu_item_new_from_stock (GTK_STOCK_PROPERTIES, NULL);
-	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-	gtk_widget_show (item);
-
-	g_signal_connect (
-		item, "activate",
-		G_CALLBACK (do_properties), NULL);
-
-	item = gtk_separator_menu_item_new ();
-	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-	gtk_widget_show (item);
-
-	item = gtk_image_menu_item_new_from_stock (GTK_STOCK_QUIT, NULL);
-	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-	gtk_widget_show (item);
-
-	g_signal_connect (
-		item, "activate",
-		G_CALLBACK (do_quit), NULL);
-
-	gtk_menu_popup (GTK_MENU (menu),
-		NULL, NULL,
-		gtk_status_icon_position_menu,
-		user_data,
-		button, activate_time);
-}
-
-static void
-new_notify_status (EMEventTargetFolder *t)
+new_notify_status(EMEventTargetFolder *t, struct OnIcon *_onicon)
 {
 	gchar *msg;
-	gboolean new_icon = !tray_icon;
 
-	EShell *shell = e_shell_get_default ();
+	EShell *shell = e_shell_get_default();
 	CamelStore *store;
 	gchar *folder_name;
 	EMailBackend *backend;
 	EMailSession *session;
 	EShellBackend *shell_backend;
 
-	gchar *uri;
+	_onicon->uri = g_strdup(t->folder_name);
 
-	uri = g_strdup(t->folder_name);
-
-	g_object_set_data_full (
-		G_OBJECT (tray_icon), "uri",
-		uri,
-		(GDestroyNotify) g_free);
-
-		ESource *source = NULL;
+	ESource *source = NULL;
 		ESourceRegistry *registry;
-		const gchar *name;
+	const gchar *name;
 
-		const gchar *uid;
-		gchar *aname = t->display_name;
+	const gchar *uid;
+	gchar *aname = t->display_name;
 
-		uid = camel_service_get_uid (CAMEL_SERVICE (t->store));
-		registry = e_shell_get_registry (shell);
-		source = e_source_registry_ref_source (registry,uid);
-		name = e_source_get_display_name (source);
+	uid = camel_service_get_uid(CAMEL_SERVICE(t->store));
+	registry = e_shell_get_registry(shell);
+	source = e_source_registry_ref_source(registry,uid);
+	name = e_source_get_display_name(source);
 
-		shell_backend = e_shell_get_backend_by_name (shell, "mail");
+	shell_backend = e_shell_get_backend_by_name(shell, "mail");
 
-		backend = E_MAIL_BACKEND (shell_backend);
-		session = e_mail_backend_get_session (backend);
+	backend = E_MAIL_BACKEND(shell_backend);
+	session = e_mail_backend_get_session(backend);
 
-		e_mail_folder_uri_parse (
-			CAMEL_SESSION (session), t->folder_name,
+	e_mail_folder_uri_parse (CAMEL_SESSION(session), t->folder_name,
 			&store, &folder_name, NULL);
 
-		if (name != NULL)
-			folder_name = g_strdup_printf (
-				"%s/%s", name, folder_name);
-		else
-			folder_name = g_strdup (folder_name);
+	if (name != NULL)
+		folder_name = g_strdup_printf("%s/%s", name, folder_name);
+	else
+		folder_name = g_strdup(folder_name);
 
-		status_count = t->new;
+	_onicon->status_count = t->new;
 
-		/* Translators: '%d' is the count of mails received
-		 * and '%s' is the name of the folder*/
-		msg = g_strdup_printf (ngettext (
+	/* Translators: '%d' is the count of mails received
+	 * and '%s' is the name of the folder
+	 */
+	msg = g_strdup_printf(ngettext(
 			"You have received %d new message\nin %s.",
-			"You have received %d new messages\nin %s.",
-			status_count), status_count, folder_name);
+		"	You have received %d new messages\nin %s.",
+			_onicon->status_count), _onicon->status_count, folder_name);
 
-		g_free(folder_name);
+	g_free(folder_name);
+	if (t->msg_sender) {
+		gchar *tmp, *str;
 
-		if (t->msg_sender) {
-			gchar *tmp, *str;
+		/* Translators: "From:" is preceding a new mail
+		 * sender address, like "From: user@example.com"
+		 */
+		str = g_strdup_printf(_("From: %s"), t->msg_sender);
+		tmp = g_strconcat(msg, "\n", str, NULL);
 
-			/* Translators: "From:" is preceding a new mail
-                         * sender address, like "From: user@example.com" */
-			str = g_strdup_printf (_("From: %s"), t->msg_sender);
-			tmp = g_strconcat (msg, "\n", str, NULL);
+		g_free(msg);
+		g_free(str);
+		msg = tmp;
+	}
+	if (t->msg_subject) {
+		gchar *tmp, *str;
 
-			g_free (msg);
-			g_free (str);
-			msg = tmp;
-		}
-		if (t->msg_subject) {
-			gchar *tmp, *str;
+		/* Translators: "Subject:" is preceding a new mail
+		 * subject, like "Subject: It happened again"
+		 */
+		str = g_strdup_printf(_("Subject: %s"), t->msg_subject);
+		tmp = g_strconcat(msg, "\n", str, NULL);
 
-			/* Translators: "Subject:" is preceding a new mail
-                         * subject, like "Subject: It happened again" */
-			str = g_strdup_printf (_("Subject: %s"), t->msg_subject);
-			tmp = g_strconcat (msg, "\n", str, NULL);
+		g_free(msg);
+		g_free(str);
+		msg = tmp;
+	}
 
-			g_free (msg);
-			g_free (str);
-			msg = tmp;
-		}
+	/*
+	 * Drop it?
+	gtk_status_icon_set_tooltip_text(tray_icon, msg);
 
-	gtk_status_icon_set_tooltip_text (tray_icon, msg);
-
-	gtk_status_icon_set_from_pixbuf (
-		tray_icon,
-		e_icon_factory_get_icon (
-			"mail-unread",
-			GTK_ICON_SIZE_SMALL_TOOLBAR));
+	gtk_status_icon_set_from_pixbuf(tray_icon,
+			e_icon_factory_get_icon("mail-unread",
+					GTK_ICON_SIZE_SMALL_TOOLBAR));
+	*/
 
 #ifdef HAVE_LIBNOTIFY
 	/* Now check whether we're supposed to send notifications */
-	if (is_part_enabled (NOTIF_SCHEMA, CONF_KEY_STATUS_NOTIFICATION)) {
+	if (is_part_enabled(NOTIF_SCHEMA, CONF_KEY_STATUS_NOTIFICATION)) {
 		gchar *safetext;
 
-		safetext = g_markup_escape_text (msg, strlen (msg));
+		safetext = g_markup_escape_text(msg, strlen(msg));
 		//don't let the notification pile-up on the notification tray
-		notify_notification_close(notify, NULL);
-		if (!notify_init ("evolution-mail-notification"))
-			fprintf (stderr,"notify init error");
+		if (_onicon->notify)
+			notify_notification_close(_onicon->notify, NULL);
+		if (!notify_init("evolution-mail-notification"))
+			fprintf(stderr,"notify init error");
 
-		notify  = notify_notification_new (
-			_("New email"), safetext,
-#if LIBNOTIFY_VERSION < 7000
-			"mail-unread", NULL);
-#else
-			"mail-unread");
-#endif
-#if LIBNOTIFY_VERSION < 7000
-		notify_notification_attach_to_status_icon (
-			notify, tray_icon);
-#endif
+#if (LIBNOTIFY_VERSION < 7000)
+		_onicon->notify  = notify_notification_new(_("New email"), safetext,
+				"mail-unread", NULL);
+		notify_notification_attach_to_status_icon(_onicon->notify, tray_icon);
+#else /* !(LIBNOTIFY_VERSION < 7000) */
+		_onicon->notify  = notify_notification_new(_("New email"), safetext,
+				"mail-unread");
+#endif /* (LIBNOTIFY_VERSION < 7000) */
 
 		/* Check if actions are supported */
-		if (can_support_actions ()) {
-			notify_notification_set_urgency (
-				notify, NOTIFY_URGENCY_NORMAL);
-			notify_notification_set_timeout (
-				notify, NOTIFY_EXPIRES_DEFAULT);
-			g_timeout_add (
-				500, notification_callback, notify);
+		if (can_support_actions()) {
+			notify_notification_set_urgency(_onicon->notify,
+					NOTIFY_URGENCY_NORMAL);
+			notify_notification_set_timeout(_onicon->notify,
+					NOTIFY_EXPIRES_DEFAULT);
+			g_timeout_add(500, notification_callback, &on_icon);
 		}
-		g_free (safetext);
+		g_free(safetext);
 	}
-#endif
-	winnotify = TRUE;
+#endif /* HAVE_LIBNOTIFY */
+	_onicon->winnotify = TRUE;
 
-	g_free (msg);
+	g_free(msg);
 }
 
-GtkWidget *
-e_plugin_lib_get_configure_widget (EPlugin *epl);
-
 void
-org_gnome_evolution_tray_startup(
-		void *ep,
-		ESEventTargetUpgrade *t);
-
-void
-org_gnome_evolution_tray_startup(
-		void *ep,
-		ESEventTargetUpgrade *t)
+org_gnome_evolution_tray_startup(void *ep, ESEventTargetUpgrade *t)
 {
-	g_print("Evolution-on plugin enabled.\n");
-	g_signal_connect(G_OBJECT (e_shell_get_default()),
-		"quit-requested",
-		G_CALLBACK (on_quit_requested), NULL);
-	create_status_icon();
+	create_icon(&on_icon, do_properties, do_quit, toggle_window);
 }
-
-void org_gnome_evolution_tray_mail_new_notify (EPlugin *ep, EMEventTargetFolder *t);
 
 void
-org_gnome_evolution_tray_mail_new_notify (EPlugin *ep, EMEventTargetFolder *t)
+org_gnome_evolution_tray_mail_new_notify(EPlugin *ep, EMEventTargetFolder *t)
 {
-	new_notify_status (t);
+	new_notify_status(t, &on_icon);
 }
 
-static gboolean window_state_event (GtkWidget *widget, GdkEventWindowState *event)
+static gboolean
+window_state_event(GtkWidget *widget, GdkEventWindowState *event)
 {
 	if (is_part_enabled(TRAY_SCHEMA, CONF_KEY_HIDE_ON_MINIMIZE)
-	&& event->changed_mask == GDK_WINDOW_STATE_ICONIFIED
-	&& event->new_window_state & GDK_WINDOW_STATE_ICONIFIED) {
-		toggle_window ();
+			&& (event->changed_mask == GDK_WINDOW_STATE_ICONIFIED)
+			&& (event->new_window_state & GDK_WINDOW_STATE_ICONIFIED)) {
+		on_icon.toggle_window_func();
 	}
 	return TRUE;
 }
 
 gboolean
-on_quit_requested(
-	EShell *shell,
-	EShellQuitReason reason,
-	gpointer user_data)
+on_quit_requested(EShell *shell, EShellQuitReason reason, gpointer user_data)
 {
-	if(is_part_enabled (TRAY_SCHEMA, CONF_KEY_HIDE_ON_CLOSE)
-	&& (reason == E_SHELL_QUIT_LAST_WINDOW)) {
-			e_shell_cancel_quit(e_shell_get_default());
-			toggle_window();
-		}
+	if(is_part_enabled(TRAY_SCHEMA, CONF_KEY_HIDE_ON_CLOSE)
+			&& (reason == E_SHELL_QUIT_LAST_WINDOW)) {
+		e_shell_cancel_quit(e_shell_get_default());
+		on_icon.toggle_window_func();
+	}
 	return TRUE;
 }
 
 gboolean
-e_plugin_ui_init (
-	GtkUIManager *ui_manager,
-	EShellView *shell_view)
+e_plugin_ui_init(GtkUIManager *ui_manager, EShellView *shell_view)
 {
-	evo_window = e_shell_view_get_shell_window (shell_view);
+	on_icon.evo_window = e_shell_view_get_shell_window(shell_view);
+
 	if (is_part_enabled(TRAY_SCHEMA, CONF_KEY_HIDDEN_ON_STARTUP)) {
-		shown_first_time_handle =
-			g_signal_connect (G_OBJECT (evo_window),
+		shown_first_time_handle = g_signal_connect(G_OBJECT(on_icon.evo_window),
 				"show",
-				G_CALLBACK (shown_first_time_cb), NULL);
+				G_CALLBACK(shown_first_time_cb), NULL);
 	}
 
-	g_signal_connect (G_OBJECT (evo_window),
-		"window-state-event",
-		G_CALLBACK (window_state_event), NULL);
+	g_signal_connect(G_OBJECT(on_icon.evo_window), "window-state-event",
+			G_CALLBACK(window_state_event), NULL);
 
-	g_signal_connect(G_OBJECT (e_shell_get_default()),
-		"quit-requested",
-		G_CALLBACK (on_quit_requested), NULL);
+	g_signal_connect(G_OBJECT(e_shell_get_default()), "quit-requested",
+			G_CALLBACK(on_quit_requested), NULL);
 
 	return TRUE;
 }
 
 GtkWidget *
-e_plugin_lib_get_configure_widget (EPlugin *epl)
+e_plugin_lib_get_configure_widget(EPlugin *epl)
 {
-	return get_cfg_widget ();
+	return get_cfg_widget();
 }
