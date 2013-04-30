@@ -6,10 +6,15 @@
 	location="+PLUGIN_INSTALL_DIR+/liborg-gnome-evolution-on.so"
 	domain="+GETTEXT_PACKAGE+"
 	localedir="+LOCALEDIR+"
-	_name="Evolution Tray Icon">
+	_name="Evolution On">
 	<_description>Support for controling Evolution from system tray</_description>
 	<author name="Lucian Langa" email="lucilanga@gnome.org"/>
+	<author name="Kostadin Atanasov" email="pranayama111@gmail.com"/>
 
+	<hook class="org.gnome.evolution.ui:1.0">
+		<ui-manager id="org.gnome.evolution.mail">
+		</ui-manager>
+	</hook>
 	<hook class="org.gnome.evolution.shell.events:1.0">
 		<event
 			id="upgrade.done"
