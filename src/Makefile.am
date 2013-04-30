@@ -30,7 +30,9 @@ plugin_DATA = 					\
 plugin_LTLIBRARIES = liborg-gnome-evolution-on.la
 
 liborg_gnome_evolution_on_la_SOURCES = tray.c
-liborg_gnome_evolution_on_la_LIBADD = $(LIBGCONFBRIDGE_LIBS) $(LIBNOTIFY_LIBS)
+liborg_gnome_evolution_on_la_CFLAGS=$(libappindicator_CFLAGS)
+liborg_gnome_evolution_on_la_LIBADD = $(LIBGCONFBRIDGE_LIBS) $(LIBNOTIFY_LIBS)	\
+	$(libappindicator_LIBS)
 liborg_gnome_evolution_on_la_LDFLAGS = -module -avoid-version -rpath $(PLUGIN_INSTALL_DIR)
 
 gsettings_SCHEMAS =                            \

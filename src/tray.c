@@ -51,6 +51,10 @@
 #include <libnotify/notify.h>
 #endif
 
+#ifdef HAVE_LIBAPPINDICATOR
+#include <libappindicator/app-indicator.h>
+#endif
+
 #include "on_properties.h"
 #include "on_icon.h"
 

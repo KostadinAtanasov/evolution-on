@@ -101,6 +101,21 @@ dnl ***********
 AC_PATH_PROG(GCONFTOOL, gconftool-2, no)
 AM_GCONF_SOURCE_2
 
+dnl ***************
+dnl Libappindicator stuff
+dnl ***************
+LIBAPPINDICATOR_CFLAGS=
+LIBAPPINDICATOR_LIBS=
+AC_ARG_WITH(libappindicator, [ --with-libappindicator=yes use libappindicator instead of systray])
+if test "x$with_libappindicator" != "x"; then
+	PKG_CHECK_MODULES([libappindicator], [appindicator3-0.1], [HAVE_LIBAPPINDICATOR="yes"], [HAVE_LIBAPPINDICATOR="no"])
+	if test "x$HAVE_LIBAPPINDICATOR" = "xyes"; then
+		AC_DEFINE(HAVE_LIBAPPINDICATOR, 1, [libappindicator available])
+	fi
+fi
+AC_SUBST([libappindicator_CFLAGS])
+AC_SUBST([libappindicator_LIBS])
+
 dnl Internationalisation stuff
 ALL_LINGUAS="en"
 

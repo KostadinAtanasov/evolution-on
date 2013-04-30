@@ -25,7 +25,11 @@ typedef void (*do_quit_func)(GtkMenuItem*, gpointer);
 typedef void (*do_toggle_window_func)();
 
 struct OnIcon {
+#ifdef HAVE_LIBAPPINDICATOR
+	AppIndicator			*appindicator;
+#else
 	GtkStatusIcon			*icon;
+#endif
 
 	EShellWindow			*evo_window;
 
@@ -49,13 +53,18 @@ static void
 remove_notification(struct OnIcon *_onicon);
 static void
 status_icon_activate_cb(struct OnIcon *_onicon);
-static void
-icon_activated(GtkStatusIcon *icon, gpointer user_data);
+
 static gboolean
 button_press_cb(GtkWidget *widget, GdkEventButton *event, gpointer data);
+
+#ifndef HAVE_LIBAPPINDICATOR
+static void
+icon_activated(GtkStatusIcon *icon, gpointer user_data);
+
 static void
 popup_menu_status(GtkStatusIcon *status_icon, guint button,
 		guint activate_time, gpointer user_data);
+#endif /* HAVE_LIBAPPINDICATOR */
 
 static GtkMenu *
 create_popup_menu(struct OnIcon *_onicon);
@@ -71,6 +80,25 @@ create_icon(struct OnIcon *_onicon,
 	_onicon->toggle_window_func = _toggle_window_func;
 	_onicon->winnotify = FALSE;
 	_onicon->winstatus = TRUE;
+
+#ifdef HAVE_LIBAPPINDICATOR
+
+	GtkMenu *menu;
+	const gchar *read_icon = e_icon_factory_get_icon_filename("mail-read",
+			GTK_ICON_SIZE_SMALL_TOOLBAR);
+	const gchar *unread_icon = e_icon_factory_get_icon_filename("mail-unread",
+			GTK_ICON_SIZE_SMALL_TOOLBAR);
+	_onicon->appindicator = app_indicator_new("evolution-on", read_icon,
+			APP_INDICATOR_CATEGORY_APPLICATION_STATUS);
+	app_indicator_set_status(_onicon->appindicator,
+			APP_INDICATOR_STATUS_ACTIVE);
+	app_indicator_set_icon_full(_onicon->appindicator, read_icon, _("mail"));
+	app_indicator_set_attention_icon_full(_onicon->appindicator, unread_icon,
+			_("new mail"));
+	menu = create_popup_menu(_onicon);
+	app_indicator_set_menu(_onicon->appindicator, GTK_MENU(menu));
+
+#else /* !HAVE_LIBAPPINDICATOR */
 
 	if (!_onicon->icon) {
 		_onicon->icon = gtk_status_icon_new();
@@ -89,8 +117,11 @@ create_icon(struct OnIcon *_onicon,
 				G_CALLBACK(popup_menu_status), _onicon);
 	}
 	gtk_status_icon_set_visible(_onicon->icon, TRUE);
+
+#endif /* HAVE_LIBAPPINDICATOR */
 }
 
+#ifndef HAVE_LIBAPPINDICATOR
 static void
 icon_activated(GtkStatusIcon *icon, gpointer user_data)
 {
@@ -100,17 +131,6 @@ icon_activated(GtkStatusIcon *icon, gpointer user_data)
 			e_icon_factory_get_icon("mail-read", GTK_ICON_SIZE_SMALL_TOOLBAR));
 	gtk_status_icon_set_has_tooltip (_onicon->icon, FALSE);
 	_onicon->winnotify = FALSE;
-}
-
-static gboolean
-button_press_cb(GtkWidget *widget, GdkEventButton *event, gpointer data)
-{
-	struct OnIcon *_onicon = (struct OnIcon*)data;
-	if (event->button != 1) {
-		return FALSE;
-	}
-	_onicon->toggle_window_func();
-	return TRUE;
 }
 
 static void
@@ -125,6 +145,18 @@ popup_menu_status(GtkStatusIcon *status_icon, guint button,
 			_onicon->icon,
 			button, activate_time);
 }
+#endif /* HAVE_LIBAPPINDICATOR */
+
+static gboolean
+button_press_cb(GtkWidget *widget, GdkEventButton *event, gpointer data)
+{
+	struct OnIcon *_onicon = (struct OnIcon*)data;
+	if (event->button != 1) {
+		return FALSE;
+	}
+	_onicon->toggle_window_func();
+	return TRUE;
+}
 
 static GtkMenu *
 create_popup_menu(struct OnIcon *_onicon)
@@ -133,6 +165,14 @@ create_popup_menu(struct OnIcon *_onicon)
 	GtkWidget *item;
 
 	menu = GTK_MENU(gtk_menu_new());
+
+#ifdef HAVE_LIBAPPINDICATOR
+	item = gtk_menu_item_new_with_label(_("Show Evolution"));
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	gtk_widget_show(item);
+	g_signal_connect(item, "activate",
+			G_CALLBACK(_onicon->toggle_window_func), _onicon);
+#endif /* HAVE_LIBAPPINDICATOR */
 
 	item = gtk_image_menu_item_new_from_stock(GTK_STOCK_PROPERTIES, NULL);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
