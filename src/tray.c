@@ -94,11 +94,9 @@ toggle_window()
 {
 	if (gtk_widget_get_visible(GTK_WIDGET(on_icon.evo_window))) {
 		gtk_widget_hide(GTK_WIDGET(on_icon.evo_window));
-		on_icon.winstatus = FALSE;
 	} else {
 		gtk_widget_show(GTK_WIDGET(on_icon.evo_window));
 		gtkut_window_popup(GTK_WIDGET(on_icon.evo_window));
-		on_icon.winstatus = TRUE;
 	}
 
 	if (on_icon.winnotify) {
@@ -345,11 +343,22 @@ static gboolean
 window_state_event(GtkWidget *widget, GdkEventWindowState *event)
 {
 	if (is_part_enabled(TRAY_SCHEMA, CONF_KEY_HIDE_ON_MINIMIZE)
-			&& (event->changed_mask == GDK_WINDOW_STATE_ICONIFIED)
-			&& (event->new_window_state & GDK_WINDOW_STATE_ICONIFIED)) {
-		on_icon.toggle_window_func();
+			&& (event->changed_mask == GDK_WINDOW_STATE_ICONIFIED)) {
+
+		if (event->new_window_state & GDK_WINDOW_STATE_ICONIFIED) {
+#ifdef HAVE_LIBAPPINDICATOR
+			GtkMenu *menu = app_indicator_get_menu(on_icon.appindicator);
+			GList *items = gtk_container_get_children(GTK_CONTAINER(menu));
+			GtkWidget *item = g_list_nth_data(items, 0);
+			gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), FALSE);
+#else /* !HAVE_LIBAPPINDICATOR */
+			on_icon.toggle_window_func();
+#endif /* HAVE_LIBAPPINDICATOR */
+		} else {
+			gtk_window_deiconify(GTK_WINDOW(widget));
+		}
 	}
-	return TRUE;
+	return FALSE;
 }
 
 gboolean
@@ -358,7 +367,14 @@ on_quit_requested(EShell *shell, EShellQuitReason reason, gpointer user_data)
 	if(is_part_enabled(TRAY_SCHEMA, CONF_KEY_HIDE_ON_CLOSE)
 			&& (reason == E_SHELL_QUIT_LAST_WINDOW)) {
 		e_shell_cancel_quit(e_shell_get_default());
+#ifdef HAVE_LIBAPPINDICATOR
+	GtkMenu *menu = app_indicator_get_menu(on_icon.appindicator);
+	GList *items = gtk_container_get_children(GTK_CONTAINER(menu));
+	GtkWidget *item = g_list_nth_data(items, 0);
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), FALSE);
+#else /* !HAVE_LIBAPPINDICATOR */
 		on_icon.toggle_window_func();
+#endif /* HAVE_LIBAPPINDICATOR */
 	}
 	return TRUE;
 }

@@ -44,7 +44,6 @@ struct OnIcon {
 	gchar					*uri;
 	guint					status_count;
 	gboolean				winnotify;
-	gboolean				winstatus;
 }; /* struct OnIcon */
 
 #define ONICON_NEW {NULL}
@@ -104,7 +103,6 @@ create_icon(struct OnIcon *_onicon,
 	_onicon->quit_func = _quit_func;
 	_onicon->toggle_window_func = _toggle_window_func;
 	_onicon->winnotify = FALSE;
-	_onicon->winstatus = TRUE;
 
 #ifdef HAVE_LIBAPPINDICATOR
 
@@ -146,7 +144,16 @@ create_icon(struct OnIcon *_onicon,
 #endif /* HAVE_LIBAPPINDICATOR */
 }
 
-#ifndef HAVE_LIBAPPINDICATOR
+#ifdef HAVE_LIBAPPINDICATOR
+static void
+indicator_activated(GtkMenuItem *item, gpointer user_data)
+{
+	struct OnIcon *_onicon = (struct OnIcon*)user_data;
+	_onicon->toggle_window_func();
+	status_icon_activate_cb(_onicon);
+}
+#else /* HAVE_LIBAPPINDICATOR */
+
 static void
 icon_activated(GtkStatusIcon *icon, gpointer user_data)
 {
@@ -192,11 +199,12 @@ create_popup_menu(struct OnIcon *_onicon)
 	menu = GTK_MENU(gtk_menu_new());
 
 #ifdef HAVE_LIBAPPINDICATOR
-	item = gtk_menu_item_new_with_label(_("Show Evolution"));
+	item = gtk_check_menu_item_new_with_label(_("Show Evolution"));
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), TRUE);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	gtk_widget_show(item);
-	g_signal_connect(item, "activate",
-			G_CALLBACK(_onicon->toggle_window_func), _onicon);
+	g_signal_connect(GTK_CHECK_MENU_ITEM(item), "toggled",
+			G_CALLBACK(indicator_activated), _onicon);
 #endif /* HAVE_LIBAPPINDICATOR */
 
 	item = gtk_image_menu_item_new_from_stock(GTK_STOCK_PROPERTIES, NULL);
