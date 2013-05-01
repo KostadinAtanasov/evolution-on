@@ -178,7 +178,14 @@ static void
 shown_first_time_cb(GtkWidget *widget, gpointer user_data)
 {
 	g_signal_handler_disconnect(widget, shown_first_time_handle);
+#ifdef HAVE_LIBAPPINDICATOR
+	GtkMenu *menu = app_indicator_get_menu(on_icon.appindicator);
+	GList *items = gtk_container_get_children(GTK_CONTAINER(menu));
+	GtkWidget *item = g_list_nth_data(items, 0);
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), FALSE);
+#else /* !HAVE_LIBAPPINDICATOR */
 	on_icon.toggle_window_func();
+#endif /* HAVE_LIBAPPINDICATOR */
 }
 
 static GStaticMutex mlock = G_STATIC_MUTEX_INIT;
