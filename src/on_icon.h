@@ -80,13 +80,13 @@ set_icon(struct OnIcon *_onicon, gboolean unread, const gchar *msg)
 				APP_INDICATOR_STATUS_ACTIVE);
 	}
 #else /* !#ifdef HAVE_LIBAPPINDICATOR */
-	gtk_status_icon_set_tooltip_text(tray_icon, msg);
+	gtk_status_icon_set_tooltip_text(_onicon->icon, msg);
 	if (unread) {
-		gtk_status_icon_set_from_pixbuf(tray_icon,
+		gtk_status_icon_set_from_pixbuf(_onicon->icon,
 				e_icon_factory_get_icon("mail-unread",
 						GTK_ICON_SIZE_SMALL_TOOLBAR));
 	} else {
-		gtk_status_icon_set_from_pixbuf(tray_icon,
+		gtk_status_icon_set_from_pixbuf(_onicon->icon,
 				e_icon_factory_get_icon("mail-read",
 						GTK_ICON_SIZE_SMALL_TOOLBAR));
 	}
