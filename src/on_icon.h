@@ -247,18 +247,22 @@ status_icon_activate_cb(struct OnIcon *_onicon)
 
 	g_return_if_fail(list != NULL);
 
-	/* Present the shell window. */
-	shell_window = E_SHELL_WINDOW(list->data);
+	if (_onicon->uri) {
+		/* Present the shell window. */
+		shell_window = E_SHELL_WINDOW(list->data);
 
-	/* Switch to the mail view. */
-	shell_view = e_shell_window_get_shell_view(shell_window, "mail");
-	action = e_shell_view_get_action(shell_view);
-	gtk_action_activate(action);
+		/* Switch to the mail view. */
+		shell_view = e_shell_window_get_shell_view(shell_window, "mail");
+		action = e_shell_view_get_action(shell_view);
+		gtk_action_activate(action);
 
-	/* Select the latest folder with new mail. */
-	shell_sidebar = e_shell_view_get_shell_sidebar(shell_view);
-	g_object_get(shell_sidebar, "folder-tree", &folder_tree, NULL);
-	em_folder_tree_set_selected(folder_tree, _onicon->uri, FALSE);
+		/* Select the latest folder with new mail. */
+		shell_sidebar = e_shell_view_get_shell_sidebar(shell_view);
+		g_object_get(shell_sidebar, "folder-tree", &folder_tree, NULL);
+		em_folder_tree_set_selected(folder_tree, _onicon->uri, FALSE);
+
+		_onicon->uri = NULL;
+	}
 
 	remove_notification(_onicon);
 }
