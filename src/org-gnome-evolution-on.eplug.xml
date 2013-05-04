@@ -29,9 +29,13 @@
 	</hook>
 	<hook class="org.gnome.evolution.mail.events:1.0">
 		<event id="folder.changed"
-			enable="newmail"
-			handle="org_gnome_evolution_tray_mail_new_notify"
+			handle="org_gnome_evolution_on_folder_changed"
 			target="folder"/>
+	</hook>
+	<hook class="org.gnome.evolution.mail.events:1.0">
+		<event id="message.reading"
+			handle="org_gnome_mail_read_notify"
+			target="message"/>
 	</hook>
 </e-plugin>
 </e-plugin-list>

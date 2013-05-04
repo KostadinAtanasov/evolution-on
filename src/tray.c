@@ -341,9 +341,31 @@ org_gnome_evolution_tray_startup(void *ep, ESEventTargetUpgrade *t)
 }
 
 void
-org_gnome_evolution_tray_mail_new_notify(EPlugin *ep, EMEventTargetFolder *t)
+org_gnome_evolution_on_folder_changed(EPlugin *ep, EMEventTargetFolder *t)
 {
-	new_notify_status(t, &on_icon);
+	/* TODO:
+	 * try to update state according what is changed in the folder. Note -
+	 * getting the folder may block...
+	 */
+	if (t->new > 0)
+		new_notify_status(t, &on_icon);
+}
+
+void
+org_gnome_mail_read_notify(EPlugin *ep, EMEventTargetMessage *t)
+{
+	if (g_atomic_int_compare_and_exchange(&on_icon.status_count, 0, 0))
+		return;
+
+	CamelMessageInfo *info = camel_folder_get_message_info(t->folder, t->uid);
+	if (info) {
+		guint flags = camel_message_info_flags(info);
+		if (!(flags & CAMEL_MESSAGE_SEEN)) {
+			if (g_atomic_int_dec_and_test(&on_icon.status_count))
+				set_icon(&on_icon, FALSE, _(""));
+		}
+		camel_folder_free_message_info(t->folder, info);
+	}
 }
 
 static gboolean
