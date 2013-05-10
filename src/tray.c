@@ -58,7 +58,8 @@
 #include "on_properties.h"
 #include "on_icon.h"
 
-static gulong shown_first_time_handle = 0;
+static gulong show_window_handle = 0;
+static gboolean show_window_cb_called = FALSE;
 struct OnIcon on_icon = ONICON_NEW;
 
 gboolean
@@ -175,17 +176,37 @@ do_properties(GtkMenuItem *item, gpointer user_data)
 }
 
 static void
-shown_first_time_cb(GtkWidget *widget, gpointer user_data)
+shown_window_cb(GtkWidget *widget, gpointer user_data)
 {
-	g_signal_handler_disconnect(widget, shown_first_time_handle);
+	if (!show_window_cb_called) {
+		if (is_part_enabled(TRAY_SCHEMA, CONF_KEY_HIDDEN_ON_STARTUP)) {
 #ifdef HAVE_LIBAPPINDICATOR
-	GtkMenu *menu = app_indicator_get_menu(on_icon.appindicator);
-	GList *items = gtk_container_get_children(GTK_CONTAINER(menu));
-	GtkWidget *item = g_list_nth_data(items, 0);
-	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), FALSE);
+			GtkMenu *menu = app_indicator_get_menu(on_icon.appindicator);
+			GList *items = gtk_container_get_children(GTK_CONTAINER(menu));
+			GtkWidget *item = g_list_nth_data(items, 0);
+			gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), FALSE);
 #else /* !HAVE_LIBAPPINDICATOR */
-	on_icon.toggle_window_func();
+			on_icon.toggle_window_func();
 #endif /* HAVE_LIBAPPINDICATOR */
+		}
+		show_window_cb_called = TRUE;
+	} else {
+#ifdef HAVE_LIBAPPINDICATOR
+			/*
+			 * Make sure indicator has proper state no matter how we are shown.
+			 * We could be shown by user clicking Evolution icon in her
+			 * launcher when we are hiding it, in which case this is the only
+			 * place we could set the indicator shown state to TRUE.
+			 */
+			GtkMenu *menu = app_indicator_get_menu(on_icon.appindicator);
+			GList *items = gtk_container_get_children(GTK_CONTAINER(menu));
+			GtkWidget *item = g_list_nth_data(items, 0);
+			if (!gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(item))) {
+				on_icon.external_shown = TRUE;
+				gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), TRUE);
+			}
+#endif /* HAVE_LIBAPPINDICATOR */
+	}
 }
 
 static GStaticMutex mlock = G_STATIC_MUTEX_INIT;
@@ -413,11 +434,8 @@ e_plugin_ui_init(GtkUIManager *ui_manager, EShellView *shell_view)
 {
 	on_icon.evo_window = e_shell_view_get_shell_window(shell_view);
 
-	if (is_part_enabled(TRAY_SCHEMA, CONF_KEY_HIDDEN_ON_STARTUP)) {
-		shown_first_time_handle = g_signal_connect(G_OBJECT(on_icon.evo_window),
-				"show",
-				G_CALLBACK(shown_first_time_cb), NULL);
-	}
+	show_window_handle = g_signal_connect(G_OBJECT(on_icon.evo_window),
+			"show", G_CALLBACK(shown_window_cb), &on_icon);
 
 	g_signal_connect(G_OBJECT(on_icon.evo_window), "window-state-event",
 			G_CALLBACK(window_state_event), NULL);

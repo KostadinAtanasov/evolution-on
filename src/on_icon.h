@@ -27,6 +27,8 @@ typedef void (*do_toggle_window_func)();
 struct OnIcon {
 #ifdef HAVE_LIBAPPINDICATOR
 	AppIndicator			*appindicator;
+	/* If somebody else rises Evolution window */
+	gboolean				external_shown;
 #else
 	GtkStatusIcon			*icon;
 #endif
@@ -120,6 +122,7 @@ create_icon(struct OnIcon *_onicon,
 			_("new mail"));
 	menu = create_popup_menu(_onicon);
 	app_indicator_set_menu(_onicon->appindicator, GTK_MENU(menu));
+	_onicon->external_shown = FALSE;
 
 #else /* !HAVE_LIBAPPINDICATOR */
 
@@ -149,8 +152,12 @@ static void
 indicator_activated(GtkMenuItem *item, gpointer user_data)
 {
 	struct OnIcon *_onicon = (struct OnIcon*)user_data;
-	_onicon->toggle_window_func();
-	status_icon_activate_cb(_onicon);
+	if (!_onicon->external_shown) {
+		_onicon->toggle_window_func();
+		status_icon_activate_cb(_onicon);
+	} else {
+		_onicon->external_shown = FALSE;
+	}
 }
 #else /* HAVE_LIBAPPINDICATOR */
 
