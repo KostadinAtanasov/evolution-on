@@ -87,7 +87,7 @@ set_icon(struct OnIcon *_onicon, gboolean unread, const gchar *msg)
 						GTK_ICON_SIZE_SMALL_TOOLBAR));
 	} else {
 		gtk_status_icon_set_from_pixbuf(_onicon->icon,
-				e_icon_factory_get_icon("mail-read",
+				e_icon_factory_get_icon("evolution",
 						GTK_ICON_SIZE_SMALL_TOOLBAR));
 	}
 #endif /* #ifdef HAVE_LIBAPPINDICATOR */
@@ -107,7 +107,7 @@ create_icon(struct OnIcon *_onicon,
 #ifdef HAVE_LIBAPPINDICATOR
 
 	GtkMenu *menu;
-	const gchar *read_icon = e_icon_factory_get_icon_filename("mail-read",
+	const gchar *read_icon = e_icon_factory_get_icon_filename("evolution",
 			GTK_ICON_SIZE_SMALL_TOOLBAR);
 	const gchar *unread_icon = e_icon_factory_get_icon_filename("mail-unread",
 			GTK_ICON_SIZE_SMALL_TOOLBAR);
@@ -126,7 +126,7 @@ create_icon(struct OnIcon *_onicon,
 	if (!_onicon->icon) {
 		_onicon->icon = gtk_status_icon_new();
 		gtk_status_icon_set_from_pixbuf(_onicon->icon,
-				e_icon_factory_get_icon("mail-read",
+				e_icon_factory_get_icon("evolution",
 						GTK_ICON_SIZE_SMALL_TOOLBAR));
 
 		g_signal_connect(G_OBJECT(_onicon->icon), "activate",
@@ -160,7 +160,7 @@ icon_activated(GtkStatusIcon *icon, gpointer user_data)
 	struct OnIcon *_onicon = (struct OnIcon*)user_data;
 	status_icon_activate_cb(_onicon);
 	gtk_status_icon_set_from_pixbuf (_onicon->icon,
-			e_icon_factory_get_icon("mail-read", GTK_ICON_SIZE_SMALL_TOOLBAR));
+			e_icon_factory_get_icon("evolution", GTK_ICON_SIZE_SMALL_TOOLBAR));
 	gtk_status_icon_set_has_tooltip (_onicon->icon, FALSE);
 	_onicon->winnotify = FALSE;
 }
