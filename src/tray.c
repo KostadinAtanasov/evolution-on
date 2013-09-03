@@ -82,11 +82,17 @@ gtkut_window_popup(GtkWidget *window)
 		gdk_window_move(gtk_widget_get_window(window), new_x, new_y);
 	}
 	gtk_window_set_skip_taskbar_hint(GTK_WINDOW(window), FALSE);
+	/* make sure the window is rised */
+#ifndef G_OS_WIN32
+	GdkWindow *gwindow = gtk_widget_get_window(GTK_WIDGET(window));
+	guint32 server_time = gdk_x11_get_server_time(gwindow);
+	gtk_window_present_with_time(GTK_WINDOW(window), server_time);
+#else
 	gtk_window_present(GTK_WINDOW(window));
-#ifdef G_OS_WIN32
 	/* ensure that the window is displayed at the top */
 	gdk_window_show(gtk_widget_get_window(window));
 #endif
+}
 }
 
 //helper method for toggling used on init for hidden on startup and on tray click
