@@ -361,7 +361,8 @@ new_notify_status(EMEventTargetFolder *t, struct OnIcon *_onicon)
 void
 org_gnome_evolution_tray_startup(void *ep)
 {
-	create_icon(&on_icon, do_properties, do_quit, toggle_window);
+	if (!on_icon.quit_func)
+		create_icon(&on_icon, do_properties, do_quit, toggle_window);
 }
 
 void
@@ -445,6 +446,9 @@ e_plugin_ui_init(GtkUIManager *ui_manager, EShellView *shell_view)
 
 	g_signal_connect(G_OBJECT(e_shell_get_default()), "quit-requested",
 			G_CALLBACK(on_quit_requested), NULL);
+
+	if (!on_icon.quit_func)
+		create_icon(&on_icon, do_properties, do_quit, toggle_window);
 
 	return TRUE;
 }
