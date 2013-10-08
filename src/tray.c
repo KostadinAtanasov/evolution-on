@@ -45,8 +45,6 @@
 
 #include <mail/e-mail-reader.h>
 
-#include <shell/es-event.h>
-
 #ifdef HAVE_LIBNOTIFY
 #include <libnotify/notify.h>
 #endif
@@ -92,7 +90,6 @@ gtkut_window_popup(GtkWidget *window)
 	/* ensure that the window is displayed at the top */
 	gdk_window_show(gtk_widget_get_window(window));
 #endif
-}
 }
 
 //helper method for toggling used on init for hidden on startup and on tray click
@@ -362,7 +359,7 @@ new_notify_status(EMEventTargetFolder *t, struct OnIcon *_onicon)
 }
 
 void
-org_gnome_evolution_tray_startup(void *ep, ESEventTargetUpgrade *t)
+org_gnome_evolution_tray_startup(void *ep)
 {
 	create_icon(&on_icon, do_properties, do_quit, toggle_window);
 }
