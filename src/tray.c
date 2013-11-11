@@ -261,7 +261,6 @@ new_notify_status(EMEventTargetFolder *t, struct OnIcon *_onicon)
 	const gchar *name;
 
 	const gchar *uid;
-	gchar *aname = t->display_name;
 
 	uid = camel_service_get_uid(CAMEL_SERVICE(t->store));
 	registry = e_shell_get_registry(shell);

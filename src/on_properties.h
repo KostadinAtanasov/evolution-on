@@ -40,11 +40,8 @@
 static gboolean
 is_part_enabled(gchar *schema, const gchar *key)
 {
-	/* the part is not enabled by default */
-	gboolean res = FALSE;
-	GSettings *settings;
-	settings = g_settings_new(schema);
-	res = g_settings_get_boolean(settings, key);
+	GSettings *settings = g_settings_new(schema);
+	gboolean res = g_settings_get_boolean(settings, key);
 	g_object_unref(settings);
 	return res;
 }

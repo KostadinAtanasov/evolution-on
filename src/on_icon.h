@@ -236,11 +236,6 @@ static void
 status_icon_activate_cb(struct OnIcon *_onicon)
 {
 	EShell *shell;
-	EShellView *shell_view;
-	EShellWindow *shell_window;
-	EShellSidebar *shell_sidebar;
-	EMFolderTree *folder_tree;
-	GtkAction *action;
 	GList *list;
 	GtkApplication *application;
 
@@ -255,6 +250,11 @@ status_icon_activate_cb(struct OnIcon *_onicon)
 	g_return_if_fail(list != NULL);
 
 	if (_onicon->uri) {
+		EShellView *shell_view;
+		EShellWindow *shell_window;
+		EShellSidebar *shell_sidebar;
+		EMFolderTree *folder_tree;
+		GtkAction *action;
 		/* Present the shell window. */
 		shell_window = E_SHELL_WINDOW(list->data);
 
