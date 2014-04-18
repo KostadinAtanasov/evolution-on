@@ -37,8 +37,11 @@
 #include <shell/e-shell-view.h>
 #include <shell/e-shell-window.h>
 
+/*
 #include <libemail-engine/e-mail-folder-utils.h>
 #include <libemail-engine/mail-ops.h>
+*/
+#include <libemail-engine/libemail-engine.h>
 
 #include <mail/em-event.h>
 #include <mail/em-folder-tree.h>
@@ -388,7 +391,7 @@ org_gnome_mail_read_notify(EPlugin *ep, EMEventTargetMessage *t)
 			if (g_atomic_int_dec_and_test(&on_icon.status_count))
 				set_icon(&on_icon, FALSE, _(""));
 		}
-		camel_folder_free_message_info(t->folder, info);
+		camel_message_info_unref(info);
 	}
 }
 

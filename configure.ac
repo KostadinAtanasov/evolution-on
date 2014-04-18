@@ -41,39 +41,17 @@ fi
 AC_SUBST(LIBGCONFBRIDGE_CFLAGS)
 AC_SUBST(LIBGCONFBRIDGE_LIBS)
 
+EVOLUTIO_PLUGIN_CHECK="evolution-plugin$EVOLUTION_BASE_VERSION_S >= $EVOLUTION_REQUIRED"
+
+if test "$evolution_version_int" -ge "31191"; then
+	EVOLUTIO_PLUGIN_CHECK=
+fi
+
 PKG_CHECK_MODULES(TRAY_EPLUGIN,
   [gtk+-3.0 >= $LIBGTK_REQUIRED dnl
-   evolution-plugin$EVOLUTION_BASE_VERSION_S >= $EVOLUTION_REQUIRED dnl
+   $EVOLUTIO_PLUGIN_CHECK dnl
    evolution-shell$EVOLUTION_BASE_VERSION_S >= $EVOLUTION_REQUIRED dnl
 ])
-
-dnl Evolution plugin install directory
-AC_ARG_WITH(plugin-install-dir, [  --with-plugin-install-dir=PATH path to evolution plugin directory])
-if test "x$with_plugin_install_dir" = "x" ; then
-   PLUGIN_INSTALL_DIR=`pkg-config --variable=plugindir evolution-plugin$EVOLUTION_BASE_VERSION_S`
-   if test "x$PLUGIN_INSTALL_DIR" = "x"; then
-      AC_MSG_ERROR(Unable to find plugin directory)
-   fi
-fi
-AC_SUBST(PLUGIN_INSTALL_DIR)
-
-
-dnl Evolution images directory
-AC_ARG_WITH(icon-dir, [  --with-icon-dir=PATH path to evolution icon directory])
-if test "x$with_icon_dir" = "x" ; then
-   ICON_DIR=`pkg-config --variable=imagesdir evolution-shell$EVOLUTION_BASE_VERSION_S`
-   if test "x$ICON_DIR" = "x"; then
-      AC_MSG_ERROR(Unable to find image directory)
-   fi
-fi
-AC_SUBST(ICON_DIR)
-
-dnl Evolution e-error install directory
-ERROR_DIR=`pkg-config --variable=errordir evolution-plugin$EVOLUTION_BASE_VERSION_S`
-if test "x$ERROR_DIR" = "x"; then
-   AC_MSG_ERROR(Unable to find error file directory)
-fi
-AC_SUBST(ERROR_DIR)
 
 libnotify_minimum_version="0.5.1"
 
