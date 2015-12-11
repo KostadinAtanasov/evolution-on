@@ -1,4 +1,4 @@
-AC_INIT([evolution-on], [3.14.0], [https://github.com/KostadinAtanasov/evolution-on])
+AC_INIT([evolution-on], [3.18.2], [https://github.com/KostadinAtanasov/evolution-on])
 AC_CONFIG_SRCDIR(src)
 
 AM_INIT_AUTOMAKE
