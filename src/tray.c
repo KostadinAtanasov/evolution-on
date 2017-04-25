@@ -387,7 +387,7 @@ org_gnome_mail_read_notify(EPlugin *ep, EMEventTargetMessage *t)
 
 	CamelMessageInfo *info = camel_folder_get_message_info(t->folder, t->uid);
 	if (info) {
-		guint flags = camel_message_info_flags(info);
+		guint flags = camel_message_info_get_flags(info);
 		if (!(flags & CAMEL_MESSAGE_SEEN)) {
 			if (g_atomic_int_dec_and_test(&on_icon.status_count))
 				set_icon(&on_icon, FALSE, _(""));
@@ -395,7 +395,7 @@ org_gnome_mail_read_notify(EPlugin *ep, EMEventTargetMessage *t)
 #if EVOLUTION_VERSION < 31192
 		camel_folder_free_message_info(t->folder, info);
 #else
-		camel_message_info_unref(info);
+		g_clear_object(&info);
 #endif
 	}
 }
