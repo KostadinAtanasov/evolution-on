@@ -1,0 +1,11 @@
+# Installation
+
+## From source
+
+On Debian:
+```sh
+sudo apt install gnome-common libgconf2-dev evolution-dev libebook1.2-dev
+./autogen.sh
+make
+sudo make install
+```
